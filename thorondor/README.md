@@ -10,33 +10,38 @@ To keep the package up to date, please use the following command : `pip install 
 There are two main classes at the core of thorondor:
 
 ### The class `Dataset`
-A new instance of the Dataset class will be initialized for each Dataset saved in the data folder. This object is then saved in the list "ClassList", attribute of the second class "GUI".
-For each Dataset, all the different dataframes that will be created as well as specific information e.g. the edge jump E0 can be found as attributes of this class. Certain attributes are instanced directly with the class, such as:
-* Name of Dataset
-* Path of original dataset
-* Timestamp
+A new instance of the Dataset class will be initialized for each Dataset saved in the data folder. This object is then saved in the list "class_list", attribute of the second class "gui".
+For each Dataset, all the different dataframes that will be created as well as specific information e.g. the edge jump E0 can be found as attributes of this class, after a specific method is used. Certain attributes are instanced directly with the class, such as:
+* name of Dataset,
+* path of original data (the .txt ,.dat, ... file ),
+* timestamp.
 
 At the end of the data reduction, each Dataset should have at least three different data sets as attributes, saved as `pandas.DataFrame()`:
-* Renamed data : Original data
-* Shifted data : If one shifts the energy 
-* Reduced data : If one applies some background reduction or normalization method 
+* renamed_df : original data,
+* shifted_df : if one shifts the energy,
+* reduced_df : if one applies some background reduction or normalization method.
 
-A Logbook entry might also be associated, under `Dataset.logbook_entry`, this is done via the GUI, the logbook should be in the common excel formats.
+A Logbook entry might also be associated, under `Dataset.logbook_entry`, this is done via the gui, the logbook should be in the common excel formats.
 
 It is possible to add commentaries for each Dataset by using the `Dataset.comment()` and to specify some additional information with the function `Dataset.metadata()`.
 
-Each Dataset can be retrieved by using the function `Dataset.unpickle()` with the path of the saved Class as an argument. This is the recommended way to share the data, since it comes with all the metadata linked to the data collection and analysis.
-
-### The class `Interface` (used to be `GUI`)
-This  class is a Graphical User Interface (GUI) that is meant to be used to process nulerous XAS datasets, that focus on similar energy range and absorption edge.
+### The class `Interface` (used to be `gui`)
+This class is a Graphical User Interface (gui) that is meant to be used to process numerous XAS datasets, that focus on similar energy range and absorption edge.
 There are two ways of initializing the procedure in a jupyter notebook:
-* `GUI = thorondor.Interface()`; one will have to write the name of the data folder in which all his raw datasets are saved in a common data format (*.txt*, *.dat*, *.csv*, *.xlsx*).
-* `GUI = thorondor.Interface.get_class_list(data_folder = "<yourdatafolder>")` ; if one has already worked on a folder and wishes to retrieve his work.
+* `gui = thorondor.Interface()`; one will have to write the name of the data folder in which all his raw datasets are saved in a common data format (*.txt*, *.dat*, *.csv*, *.xlsx*, *.nxs*).
+* `gui = thorondor.Interface.get_class_list(data_folder = "<yourdatafolder>")` ; if one has already worked on a folder and wishes to retrieve his work.
 
 This class makes extensive use of the ipywidgets and is thus meant to be used with a jupyter notebook. Additional informations concerning the use of the Interface functions are provided in the "ReadMe" tab. One may also access method information through the python `help` built-in function.
 
 All the different attributes of this class can also be exported in a single hdf5 file using the pandas `.to_hdf5` methods. They should then be accessed using the `read_hdf` methods.
-A .nxs format support is in development.
+
+### Export work
+
+After data reduction and analysis, each Dataset can be retrieved by using the function `Dataset.unpickle()` with the path of the saved Class as an argument. This is the recommended way to share the data, since it comes with all the metadata linked to the data collection and analysis. 
+
+The `Dataset` class is independent from the thorondor gui and can then be used as a stand alone class to store your data.
+
+*You can now also load `.nxs` files if the data is in `root.NXentry.NXdata.data[:]` (soft link to table) and save as .nxs (even if not originally a .nxs file) with a tool in the gui.*
 
 The necessary Python packages are : numpy, pandas, matplotlib, ipywidgets, iPython, scipy, lmfit, emcee, thorondor and pytables.
 
