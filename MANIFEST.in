@@ -1,0 +1,4 @@
+include thorondor/Elements/*
+include thorondor/Example/*
+include thorondor/Example/ExampleData/*
+include licence.txt
