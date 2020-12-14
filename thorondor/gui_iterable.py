@@ -155,30 +155,48 @@ class Dataset():
         except Exception as e:
             raise e
 
-    # def to_nxs(self, filename):
-    #     """hdf5 alias. Since thorondor only proceeds to the analysis of the data and does not directly handle the output of instruments, the NeXuS data format can be used to save the Dataset class,
-    #     but the architecture follows the processed data file, metadata follows only if given by the user.
-    #     Each dataframe used in thorondor is saved in roor.NXentry.NXdata.<dataframe> as a table, the description of the table gives the column names.
-    #     An error might raise due to fact that we use unicode character to write mu, this is not important. Use pytables.
-    #     """
-    #     try:
+    def to_nxs(self):
+        """hdf5 alias. Since thorondor only proceeds to the analysis of the data and does not directly handle the output of instruments, the NeXuS data format can be used to save the Dataset class,
+        but the architecture follows the processed data file, metadata follows only if given by the user.
+        Each dataframe used in thorondor is saved in roor.NXentry.NXdata.<dataframe> as a table, the description of the table gives the column names.
+        An error might raise due to fact that we use unicode character to write mu, this is not important. Use pytables.
+        """
+        try:
 
-    #         DfDict = {keys: value for keys, value in self.__dict__.items() if isinstance(value, pd.core.frame.DataFrame)}
-    #         DfDictNotEmpty = {keys : values for keys, values in DfDict.items() if not DfDict[f"{keys}"].empty}
+            DfDict = {keys: value for keys, value in self.__dict__.items() if isinstance(value, pd.core.frame.DataFrame)}
+            DfDictNotEmpty = {keys : values for keys, values in DfDict.items() if not DfDict[f"{keys}"].empty}
 
-    #         with tb.open_file(f"{filename}.nxs", "w") as f:
-    #             f.create_group("/","NXentry", "thorondor Dataset in nxs format. Handle with pytables.")
-    #             f.create_group("/NXentry/", 'NXdata', "Dataframes stored as tables")
+            with tb.open_file(f"{self.name}.nxs", "w", title = f"{self.name}, X-ray spectroscopy dataset, processed via thorondor.") as f:
                 
-    #             for DfName, DF in DfDictNotEmpty.items():
-    #                 desc = np.dtype([(i, j) for (i,j) in (DF.dtypes.items())])
-    #                 table = f.create_table("/NXentry/NXdata/", DfName, desc, DfName)
-    #                 table.append( DF.values)
-                    
-    #             f.create_group("/NXentry/", "NXprocess", """The data reduction has been performed via thorondor (see https://pypi.org/project/thorondor/). Please use the pytables package to extract the tables from the processed NeXuS files. One may extract the data as pandas.DataFrame by typing a command similar to: pd.DataFrame(f.root.NXentry.NXdata.df[:])""")
+                # Create nexus entry
+                f.create_group("/","NXentry", "Entry following nxs rules. Handle with pytables.")
                 
-    #             print(f)
+                # Create NXdata
+                f.create_group("/NXentry/", 'NXdata', "Contains all the data")
+                
+                # Create NXsample
+                # f.create_group("/NXentry", "NXsample", "Inf. about sample")    
 
-    #     except Exception as e:
-    #         raise e
+                #Create NXinstrument
+                # f.create_group("/NXentry", "NXinstrument", "Inf. about instrument")
+                # f.create_group("/NXentry/NXinstrument", "NXdetector", "")
+                # f.create_group("/NXentry/NXinstrument", "NXsource", "")
 
+                # Create NXprocess
+                f.create_group("/NXentry/", "NXprocess", """Processed via thorondor (see https://pypi.org/project/thorondor/)""")
+                
+                # Save the dataframes
+                f.create_group("/NXentry/NXprocess", "thorondor_dataframes", "")
+
+                for DfName, DF in DfDictNotEmpty.items():
+                    desc = np.dtype([(i, j) for (i,j) in (DF.dtypes.items())])
+                    table = f.create_table("/NXentry/NXprocess/thorondor_dataframes", DfName, desc, DfName)
+                    table.append(DF.values)
+
+                # Create soft link towards data
+                f.create_soft_link("/NXentry/NXdata", "data", "/NXentry/NXprocess/thorondor_dataframes/df")
+                
+                print(f)
+
+        except Exception as e:
+            raise e

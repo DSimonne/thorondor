@@ -220,7 +220,7 @@ class Interface():
                                                     ("Flip" , "flip"), ("Stable Monitor Norm.", "stable_monitor"), ("Relative shifts correction", "relative_shift"),
                                                     ("Global shift correction", "global_shift"), ("Gas correction", "gas"), ("Membrane correction", "membrane"), ("Deglitching", "deglitching"),
                                                     ("Merge energies", "merge"), ("Determine errors", "errors"), ("Import data", "import"),
-                                                    ("Linear Combination Fit", "LCF")
+                                                    ("Linear Combination Fit", "LCF"), ("Save as .nxs (NeXuS)", "nexus"),
                                                     ],
                                             value ="relative_shift",
                                             description = 'Tools:',
@@ -234,7 +234,7 @@ class Interface():
                                             style = {'description_width': 'initial'}),
                                         plot_bool = widgets.Checkbox(
                                             value = False,
-                                            description = 'Fix method',
+                                            description = 'Fix tool',
                                             disabled = True,
                                             style = {'description_width': 'initial'}))
         self.tab_tools.children[1].observe(self.tools_bool_handler, names = "value")
@@ -729,7 +729,7 @@ class Interface():
                                             style = {'description_width': 'initial'},
                                             layout = Layout(width = "50%", height = '40px')),
                                         data_format = widgets.Dropdown(
-                                            options = [(".npy"), (".csv"), (".txt"), (".dat")],
+                                            options = [(".npy"), (".csv"), (".txt"), (".dat"), (".nxs")],
                                             value =".npy",
                                             description = 'Format:',
                                             disabled = False,
@@ -769,6 +769,24 @@ class Interface():
                                             layout = Layout(width = "50%", height = '40px')))
         self.widget_list_import_data = widgets.VBox([widgets.HBox(self._list_import_data.children[:2]), widgets.HBox(self._list_import_data.children[2:4]), widgets.HBox(self._list_import_data.children[4:6]), self._list_import_data.children[-1]])
         self._list_import_data.children[1].observe(self.delimiter_decimal_separator_handler, names = "value")
+
+
+
+        self._list_save_as_nexus = interactive(self.save_as_nexus,
+                                            spec_number = widgets.SelectMultiple(
+                                                options = self.class_list,
+                                                value = self.class_list[0:1],
+                                                rows = 5,
+                                                description = 'Spectra to save:',
+                                                disabled = False,
+                                                style = {'description_width': 'initial'},
+                                                layout = Layout(display = "flex", flex_flow = 'column')),
+                                            apply_all = widgets.Checkbox(
+                                                value = False,
+                                                description = 'Save',
+                                                disabled = False,
+                                                style = {'description_width': 'initial'}))
+        self.widget_list_save_as_nexus = widgets.VBox([widgets.HBox(self._list_save_as_nexus.children[:2]), self._list_save_as_nexus.children[-1]])
 
 
         # Widgets for the Reduction
@@ -920,7 +938,7 @@ class Interface():
                                                 style = {'description_width': 'initial'}))
         self.widget_list_reduce_chebyshev = widgets.VBox([
                                                         self._list_reduce_chebyshev.children[0], self._list_reduce_chebyshev.children[1],
-                                                        widgets.HBox(self._list_reduce_chebyshev.children[2:4]),self._list_reduce_chebyshev.children[-1]
+                                                        widgets.HBox(self._list_reduce_chebyshev.children[2:4]), self._list_reduce_chebyshev.children[-1]
                                                         ])
 
         # Widgets for the Polynoms background reduction and normalization method
@@ -1648,7 +1666,6 @@ class Interface():
 
         if fix_name:
             self.data_folder = data_folder
-            self.data_type = data_type
 
             path_original_data = self.work_dir + str(self.data_folder)
             path_classes = path_original_data + "/Classes"
@@ -1657,10 +1674,6 @@ class Interface():
             path_import_data = path_original_data + "/Import_data"
 
             self.folders = [path_original_data, path_classes, path_data_as_csv, path_figures, path_import_data]
-            self.file_locations = [p.replace("\\", "/") for p in sorted(glob.glob(f"{self.folders[0]}/*{self.data_type}"))]
-
-            # Possible issues here
-            self.names = ["Dataset_"+f.split("/")[-1].split(".")[0] for f in self.file_locations]
 
         if fix_name and create_bool:
             clear_output=(True)
@@ -1689,6 +1702,7 @@ class Interface():
             self._list_LCF.children[0].options =  []
             self._list_LCF.children[1].options = []
             self._list_LCF.children[2].options = []
+            self._list_save_as_nexus.children[0].options = []
 
             self._list_tab_reduce_method.children[1].options = []
             self._list_tab_reduce_method.children[2].options = []
@@ -1718,7 +1732,15 @@ class Interface():
 
         if work_bool:
             print("""We now start to manipulate the data.\nFirst, rename each column and select the one we want to use.""")
-            clear_output=(True)
+
+            
+            self.data_type = data_type
+            self.file_locations = [p.replace("\\", "/") for p in sorted(glob.glob(f"{self.folders[0]}/*{self.data_type}"))]
+
+            # Possible issues here
+            self.names = ["Dataset_"+f.split("/")[-1].split(".")[0] for f in self.file_locations]
+
+            clear_output = (True)
 
             def renaming(nb_columns, new_name):
                 ButtonSaveName = Button(
@@ -1751,6 +1773,9 @@ class Interface():
                             try:
                                 if self.data_type == ".xlsx":
                                     dataset_renamed = pd.read_excel(self.file_locations[0], header = 0, names = namae,  usecols = usecol).abs()
+                                elif self.data_type == ".nxs":
+                                    with tb.open_file(self.file_locations[0], "r") as f_nxs:
+                                        dataset_renamed = pd.DataFrame(f_nxs.root.NXentry.NXdata.data[:]).abs()
                                 else:
                                     dataset_renamed = pd.read_csv(self.file_locations[0], sep = delimiter_type, header = 0, names = namae,  usecols = usecol, decimal = decimal_separator).abs()
 
@@ -1780,6 +1805,9 @@ class Interface():
                                         try:
                                             if self.data_type == ".xlsx":
                                                 dataset_renamed = pd.read_excel(f, header = 0, names = namae,  usecols = usecol).abs()
+                                            elif self.data_type == ".nxs":
+                                                with tb.open_file(f, "r") as f_nxs:
+                                                    dataset_renamed = pd.DataFrame(f_nxs.root.NXentry.NXdata.data[:]).abs()
                                             else:
                                                 dataset_renamed = pd.read_csv(f, sep = delimiter_type, header = 0, names = namae,  usecols = usecol, decimal = decimal_separator).abs()
 
@@ -1843,6 +1871,7 @@ class Interface():
                                     self._list_LCF.children[0].options =  self.class_list
                                     self._list_LCF.children[1].options =  self.class_list
                                     self._list_LCF.children[2].options = self.class_list
+                                    self._list_save_as_nexus.children[0].options = self.class_list
 
                                     self._list_tab_reduce_method.children[1].options = self.class_list
                                     self._list_tab_reduce_method.children[2].options = self.class_list
@@ -1863,6 +1892,9 @@ class Interface():
 
                                                 if self.data_type == ".xlsx":
                                                     dataset_renamed = pd.read_excel(f, header = 0, names = namae,  usecols = usecol).abs()
+                                                elif self.data_type == ".nxs":
+                                                    with tb.open_file(f, "r") as f_nxs:
+                                                        dataset_renamed = pd.DataFrame(f_nxs.root.NXentry.NXdata.data[:]).abs()
                                                 else:
                                                     dataset_renamed = pd.read_csv(f, sep = delimiter_type, header = 0, names = namae,  usecols = usecol, decimal = decimal_separator).abs()
                                               
@@ -1968,6 +2000,7 @@ class Interface():
                                         self._list_LCF.children[0].options =  self.class_list
                                         self._list_LCF.children[1].options =  self.class_list
                                         self._list_LCF.children[2].options = self.class_list
+                                        self._list_save_as_nexus.children[0].options = self.class_list
 
                                         self._list_tab_reduce_method.children[1].options = self.class_list
                                         self._list_tab_reduce_method.children[2].options = self.class_list
@@ -2027,6 +2060,9 @@ class Interface():
                 if not marker:
                     if self.data_type == ".xlsx":
                         df = pd.read_excel(self.file_locations[0]).abs()
+                    elif self.data_type == ".nxs":
+                        with tb.open_file(self.file_locations[0], "r") as f_nxs:
+                            df = pd.DataFrame(f_nxs.root.NXentry.NXdata.data[:]).abs()
                     else:
                         df = pd.read_csv(self.file_locations[0], sep = delimiter_type, decimal = decimal_separator).abs()
 
@@ -2090,11 +2126,11 @@ class Interface():
                 little_tab_init=widgets.VBox([widgets.HBox(_list_work_bool.children[:2]), _list_work_bool.children[-1]])
                 display(little_tab_init)
             
-            except IndexError:
-                print("Empty folder")
+            # except IndexError:
+            #     print("Empty folder")
 
-            except (TypeError, pd.errors.EmptyDataError, pd.errors.ParserError, UnboundLocalError):
-                print("Wrong data_type/delimiter/marker ! This may also be due to the use of colon as the decimal separator in your data, refer to ReadMe.")
+            # except (TypeError, pd.errors.EmptyDataError, pd.errors.ParserError, UnboundLocalError):
+            #     print("Wrong data_type/delimiter/marker ! This may also be due to the use of colon as the decimal separator in your data, refer to ReadMe.")
 
             except Exception as e:
                 raise e
@@ -2148,6 +2184,8 @@ class Interface():
             display(self.widget_list_LCF)
         if method == "import" and plot_bool:
             display(self.widget_list_import_data)
+        if method == "nexus" and plot_bool:
+            display(self.widget_list_save_as_nexus)
         if not plot_bool:
             print("Window cleared")
             clear_output(True)
@@ -3346,6 +3384,7 @@ class Interface():
                     self._list_LCF.children[0].options =  self.class_list
                     self._list_LCF.children[1].options =  self.class_list
                     self._list_LCF.children[2].options = self.class_list
+                    self._list_save_as_nexus.children[0].options = self.class_list
 
                     self._list_tab_reduce_method.children[1].options = self.class_list
                     self._list_tab_reduce_method.children[2].options = self.class_list
@@ -3358,6 +3397,13 @@ class Interface():
                 raise E
                 print("Could not import the data.")
 
+
+    def save_as_nexus(self, spec_number, apply_all):
+        if apply_all:
+            for C in spec_number:
+                print(f"Saving as {C.name} ... ")
+                C.to_nxs()
+                print(f"Saved as {C.name}!", end = "\n\n")
 
     # Reduction interactive function
     def reduce_data(self, method, used_class_list, used_datasets, df, plot_bool):
@@ -5775,10 +5821,10 @@ class Interface():
             self._list_widgets_init.children[10].disabled = True
 
     def excel_handler(self, change):
-        if change.new != ".xlsx":
+        if change.new not in [".xlsx", ".nxs"]:
             for w in self._list_widgets_init.children[4:7]:
                 w.disabled = False  
-        if change.new == ".xlsx":
+        if change.new in [".xlsx", ".nxs"]:
             for w in self._list_widgets_init.children[4:7]:
                 w.disabled = True
 
