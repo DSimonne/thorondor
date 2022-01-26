@@ -9,7 +9,7 @@ Regroups all the possible classes that can be used used as iterable in the Inter
 For now only Dataset
 """
 
-try :
+try:
     import numpy as np
     import pandas as pd
     import glob
@@ -25,7 +25,9 @@ try :
     import tables as tb
 
 except ModuleNotFoundError:
-    raise ModuleNotFoundError("""The following packages must be installed: numpy, pandas ipywidgets, iPython, thorondor and pytables.""")
+    raise ModuleNotFoundError(
+        """The following packages must be installed: numpy, pandas ipywidgets, iPython, thorondor and pytables.""")
+
 
 class Dataset():
     """A new instance of the Dataset class will be initialized for each Dataset saved in the data folder. This object is then modified by the class gui
@@ -34,7 +36,7 @@ class Dataset():
             _ Name of Dataset
             _ Path of original Dataset
             _ timestamp
-		
+
         At the end of the data reduction, each Dataset should have at least three different data sets as attributes, saved as pandas.DataFrame,
             _ df : Original data
             _ shifted_df : Is one shifts the energy 
@@ -75,7 +77,8 @@ class Dataset():
         self.fit_df = pd.DataFrame()
 
         try:
-            self.timestamp = datetime.utcfromtimestamp(os.path.getmtime(path)).strftime('%Y-%m-%d %H:%M:%S')
+            self.timestamp = datetime.utcfromtimestamp(
+                os.path.getmtime(path)).strftime('%Y-%m-%d %H:%M:%S')
         except:
             print("timestamp of raw file not valid")
             self.timestamp = datetime.date.today()
@@ -100,7 +103,7 @@ class Dataset():
         with open(f"{prompt}", 'rb') as f:
             return pickle.load(f)
 
-    def metadata(self, author = None, timestamp = None, instrument = None, experiment = None):
+    def metadata(self, author=None, timestamp=None, instrument=None, experiment=None):
         """Add some metadata via this method
         """
         self.author = author
@@ -109,11 +112,11 @@ class Dataset():
         self.timestamp = timestamp
         self.pickle()
 
-    def comment(self, prompt, eraseall = False):
+    def comment(self, prompt, eraseall=False):
         """Precise if you want to erase the previous comments, type your comment as a string
         """
         try:
-            if eraseall: 
+            if eraseall:
                 self.commentary = ""
             self.commentary += prompt + "\n"
             print(self.commentary)
@@ -127,9 +130,9 @@ class Dataset():
             return "{}, created on the {}.\n".format(self.name, self.timestamp)
         else:
             return "{}, created by {} on the {}, recorded on the instrument {}, experiment: {}.\n".format(
-            self.name, self.author, self.timestamp, self.instrument, self.experiment)
-    
-    def __str__(self):        
+                self.name, self.author, self.timestamp, self.instrument, self.experiment)
+
+    def __str__(self):
         return repr(self)
 
     def to_hdf5(self, filename):
@@ -138,16 +141,19 @@ class Dataset():
             The metadata is saved under the metadata attribute, see with pd.read_hdf("DatasetXXX.h5", "metadata")"""
         try:
 
-            StringDict = {keys: [value] for keys, value in self.__dict__.items() if isinstance(value, str)}
-            DfDict = {keys: value for keys, value in self.__dict__.items() if isinstance(value, pd.core.frame.DataFrame)}
-            SeriesDict = {keys: value for keys, value in self.__dict__.items() if isinstance(value, pd.core.series.Series)}
-            
+            StringDict = {keys: [
+                value] for keys, value in self.__dict__.items() if isinstance(value, str)}
+            DfDict = {keys: value for keys, value in self.__dict__.items(
+            ) if isinstance(value, pd.core.frame.DataFrame)}
+            SeriesDict = {keys: value for keys, value in self.__dict__.items(
+            ) if isinstance(value, pd.core.series.Series)}
+
             StringDf = pd.DataFrame.from_dict(StringDict)
 
             for keys, values in DfDict.items():
-                values.to_hdf(f"{filename}.h5", f"Dataframes/{keys}", mode = "a")
-                
-            StringDf.to_hdf(f"{filename}.h5", "metadata", mode = "a")
+                values.to_hdf(f"{filename}.h5", f"Dataframes/{keys}", mode="a")
+
+            StringDf.to_hdf(f"{filename}.h5", "metadata", mode="a")
 
             # for keys, values in SeriesDict.items():
             #     values.to_hdf(f"{filename}.h5", f"Series/{keys}", mode = "w")
@@ -163,39 +169,46 @@ class Dataset():
         """
         try:
 
-            DfDict = {keys: value for keys, value in self.__dict__.items() if isinstance(value, pd.core.frame.DataFrame)}
-            DfDictNotEmpty = {keys : values for keys, values in DfDict.items() if not DfDict[f"{keys}"].empty}
+            DfDict = {keys: value for keys, value in self.__dict__.items(
+            ) if isinstance(value, pd.core.frame.DataFrame)}
+            DfDictNotEmpty = {
+                keys: values for keys, values in DfDict.items() if not DfDict[f"{keys}"].empty}
 
-            with tb.open_file(f"{self.name}.nxs", "w", title = f"{self.name}, X-ray spectroscopy dataset, processed via thorondor.") as f:
-                
+            with tb.open_file(f"{self.name}.nxs", "w", title=f"{self.name}, X-ray spectroscopy dataset, processed via thorondor.") as f:
+
                 # Create nexus entry
-                f.create_group("/","NXentry", "Entry following nxs rules. Handle with pytables.")
-                
+                f.create_group(
+                    "/", "NXentry", "Entry following nxs rules. Handle with pytables.")
+
                 # Create NXdata
                 f.create_group("/NXentry/", 'NXdata', "Contains all the data")
-                
-                # Create NXsample
-                # f.create_group("/NXentry", "NXsample", "Inf. about sample")    
 
-                #Create NXinstrument
+                # Create NXsample
+                # f.create_group("/NXentry", "NXsample", "Inf. about sample")
+
+                # Create NXinstrument
                 # f.create_group("/NXentry", "NXinstrument", "Inf. about instrument")
                 # f.create_group("/NXentry/NXinstrument", "NXdetector", "")
                 # f.create_group("/NXentry/NXinstrument", "NXsource", "")
 
                 # Create NXprocess
-                f.create_group("/NXentry/", "NXprocess", """Processed via thorondor (see https://pypi.org/project/thorondor/)""")
-                
+                f.create_group(
+                    "/NXentry/", "NXprocess", """Processed via thorondor (see https://pypi.org/project/thorondor/)""")
+
                 # Save the dataframes
-                f.create_group("/NXentry/NXprocess", "thorondor_dataframes", "")
+                f.create_group("/NXentry/NXprocess",
+                               "thorondor_dataframes", "")
 
                 for DfName, DF in DfDictNotEmpty.items():
-                    desc = np.dtype([(i, j) for (i,j) in (DF.dtypes.items())])
-                    table = f.create_table("/NXentry/NXprocess/thorondor_dataframes", DfName, desc, DfName)
+                    desc = np.dtype([(i, j) for (i, j) in (DF.dtypes.items())])
+                    table = f.create_table(
+                        "/NXentry/NXprocess/thorondor_dataframes", DfName, desc, DfName)
                     table.append(DF.values)
 
                 # Create soft link towards data
-                f.create_soft_link("/NXentry/NXdata", "data", "/NXentry/NXprocess/thorondor_dataframes/df")
-                
+                f.create_soft_link("/NXentry/NXdata", "data",
+                                   "/NXentry/NXprocess/thorondor_dataframes/df")
+
                 print(f)
 
         except Exception as e:
