@@ -3,58 +3,47 @@
 
 # In[ ]:
 
-"""
-Naming style : CapitalizedWords, also used for widgets buttons 
+import numpy as np
+import pandas as pd
+import matplotlib
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import glob
+import errno
+import os
+import shutil
+import math
 
-The Interface class replaces the old gui class, following an architecture change.
-"""
+import lmfit
+from lmfit import minimize, Parameters, Parameter
+from lmfit.models import LinearModel, ConstantModel, QuadraticModel, PolynomialModel, StepModel
+from lmfit.models import GaussianModel, LorentzianModel, SplitLorentzianModel, VoigtModel, PseudoVoigtModel
+from lmfit.models import MoffatModel, Pearson7Model, StudentsTModel, BreitWignerModel, LognormalModel, ExponentialGaussianModel, SkewedGaussianModel, SkewedVoigtModel, DonaichModel
+import corner
+import numdifftools
+from scipy.stats import chisquare
 
-try:
-    import numpy as np
-    import pandas as pd
-    import matplotlib
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
-    import glob
-    import errno
-    import os
-    import shutil
-    import math
+import ipywidgets as widgets
+from ipywidgets import interact, Button, Layout, interactive, fixed
+from IPython.display import display, Markdown, Latex, clear_output
 
-    import lmfit
-    from lmfit import minimize, Parameters, Parameter
-    from lmfit.models import LinearModel, ConstantModel, QuadraticModel, PolynomialModel, StepModel
-    from lmfit.models import GaussianModel, LorentzianModel, SplitLorentzianModel, VoigtModel, PseudoVoigtModel
-    from lmfit.models import MoffatModel, Pearson7Model, StudentsTModel, BreitWignerModel, LognormalModel, ExponentialGaussianModel, SkewedGaussianModel, SkewedVoigtModel, DonaichModel
-    import corner
-    import numdifftools
-    from scipy.stats import chisquare
+from scipy import interpolate
+from scipy import optimize, signal
+from scipy import sparse
 
-    import ipywidgets as widgets
-    from ipywidgets import interact, Button, Layout, interactive, fixed
-    from IPython.display import display, Markdown, Latex, clear_output
+from datetime import datetime
+from importlib import reload
+import pickle
+import inspect
+import warnings
 
-    from scipy import interpolate
-    from scipy import optimize, signal
-    from scipy import sparse
+import tables as tb
 
-    from datetime import datetime
-    from importlib import reload
-    import pickle
-    import inspect
-    import warnings
+from matplotlib import rcParams
+rcParams['font.serif'] = 'Times'
+rcParams['font.size'] = '14'
 
-    import tables as tb
-
-    from matplotlib import rcParams
-    rcParams['font.serif'] = 'Times'
-    rcParams['font.size'] = '14'
-
-    from thorondor.gui_iterable import Dataset
-
-except ModuleNotFoundError:
-    raise ModuleNotFoundError(
-        """The following packages must be installed: numpy, pandas, matplotlib, ipywidgets, iPython, scipy, lmfit, emcee, thorondor and pytables.""")
+from thorondor.gui_iterable import Dataset
 
 
 class Interface():
@@ -6452,7 +6441,10 @@ class Interface():
     # All handler functions
 
     def name_handler(self, change):
-        """Handles changes on the widget used for the definition of the data_folder's name"""
+        """
+        Handles changes on the widget used for the definition of the
+        data_folder's name
+        """
         if change.new:
             self._list_widgets_init.children[0].disabled = True
             self._list_widgets_init.children[2].disabled = False
@@ -6497,7 +6489,9 @@ class Interface():
             self._list_widgets_init.children[3].disabled = False
 
     def delete_handler(self, change):
-        """Handles changes on the widget used for the deletion of previous work"""
+        """
+        Handles changes on the widget used for the deletion of previous work
+        """
 
         if not change.new:
             self._list_widgets_init.children[10].disabled = False
@@ -6505,7 +6499,10 @@ class Interface():
             self._list_widgets_init.children[10].disabled = True
 
     def work_handler(self, change):
-        """Handles changes on the widget used for marking the beginning of data treatment"""
+        """
+        Handles changes on the widget used for marking the beginning of data
+        treatment
+        """
         if change.new:
             for w in self._list_widgets_init.children[:10]:
                 w.disabled = True
@@ -6515,8 +6512,10 @@ class Interface():
             self._list_widgets_init.children[9].disabled = False
 
     def show_data_handler(self, change):
-        """Handles changes on the widget used to decide whether or not we show the data in the visualization tab."""
-
+        """
+        Handles changes on the widget used to decide whether or not we start
+        the reduction in the visualization tab.
+        """
         if change.new:
             self._list_data.children[0].disabled = True
             self._list_data.children[1].disabled = True
@@ -6533,7 +6532,10 @@ class Interface():
                 w.disabled = False
 
     def reduce_bool_handler(self, change):
-        """Handles changes on the widget used to decide whether or not we start the reduction in the reduction tab."""
+        """
+        Handles changes on the widget used to decide whether or not we start
+        the reduction in the reduction tab.
+        """
         if self._list_tab_reduce_method.children[0].value != "Splines":
             if change.new:
                 for w in self._list_tab_reduce_method.children[:4]:
@@ -6544,14 +6546,21 @@ class Interface():
 
         elif self._list_tab_reduce_method.children[0].value == "Splines":
             if change.new:
-                for w in [self._list_tab_reduce_method.children[0], self._list_tab_reduce_method.children[2], self._list_tab_reduce_method.children[3]]:
+                for w in [
+                    self._list_tab_reduce_method.children[0],
+                    self._list_tab_reduce_method.children[2],
+                    self._list_tab_reduce_method.children[3]
+                ]:
                     w.disabled = True
             elif not change.new:
                 for w in self._list_tab_reduce_method.children[:4]:
                     w.disabled = False
 
     def merge_bool_handler(self, change):
-        """Handles changes on the widget used to decide whether or not we merge the energies in the tools tab."""
+        """
+        Handles changes on the widget used to decide whether or not we merge
+        the energies in the tools tab.
+        """
 
         if change.new:
             for w in self._list_merge_energies.children[0:5]:
@@ -6561,7 +6570,10 @@ class Interface():
                 w.disabled = False
 
     def error_extraction_handler(self, change):
-        """Handles changes on the widget used to decide whether or not we merge the energies in the tools tab."""
+        """
+        Handles changes on the widget used to decide whether or not we merge
+        the energies in the tools tab.
+        """
 
         if change.new:
             for w in self._list_errors_extraction.children[0:7]:
@@ -6571,7 +6583,10 @@ class Interface():
                 w.disabled = False
 
     def tools_bool_handler(self, change):
-        """Handles changes on the widget used to decide whether or not we start the data treatment in the tools tab."""
+        """
+        Handles changes on the widget used to decide whether or not we start
+        the data treatment in the tools tab.
+        """
 
         if change.new:
             self.tab_tools.children[0].disabled = True
@@ -6587,7 +6602,10 @@ class Interface():
                 w.disabled = True
 
     def fit_handler(self, change):
-        """Handles changes on the widget used to pick the dataframe and spectra during the fitting routine."""
+        """
+        Handles changes on the widget used to pick the dataframe and
+        spectra during the fitting routine.
+        """
 
         if change.new:
             self._list_define_fitting_df.children[0].disabled = True
@@ -6597,7 +6615,9 @@ class Interface():
             self._list_define_fitting_df.children[1].disabled = False
 
     def model_handler(self, change):
-        """Handles changes on the widget list after fixing the fitting routine."""
+        """
+        Handles changes on the widget list after fixing the fitting routine.
+        """
 
         if change.new:
             for w in self._list_define_model.children[:6]:
@@ -6611,14 +6631,20 @@ class Interface():
                 w.disabled = False
 
     def model_degree_handler(self, change):
-        """Handles changes on the widget used to pick the degree of the polynomail background in the fitting routine."""
+        """
+        Handles changes on the widget used to pick the degree of the polynomial
+        background in the fitting routine.
+        """
         if change.new == PolynomialModel:
             self._list_define_model.children[6].disabled = False
         elif change.new != PolynomialModel:
             self._list_define_model.children[6].disabled = True
 
     def param_victoreen_handler_single(self, change):
-        """Handles changes on the widgets used to pick hte value of the initial parameter of the 1 victoreen function"""
+        """
+        Handles changes on the widgets used to pick the value of the initial
+        parameter of the 1 victoreen function
+        """
         if change.new == "victoreen":
             self._list_reduce_single_spline.children[4].disabled = False
             self._list_reduce_single_spline.children[5].disabled = False
@@ -6628,7 +6654,10 @@ class Interface():
             self._list_reduce_single_spline.children[5].disabled = True
 
     def param_victoreen_handler_1(self, change):
-        """Handles changes on the widgets used to pick hte value of the initial parameter of the 1 victoreen function"""
+        """
+        Handles changes on the widgets used to pick the value of the initial
+        parameter of the 1 victoreen function
+        """
         if change.new == "victoreen":
             self._list_reduce_splines.children[5].disabled = False
             self._list_reduce_splines.children[6].disabled = False
@@ -6638,7 +6667,10 @@ class Interface():
             self._list_reduce_splines.children[6].disabled = True
 
     def param_victoreen_handler_2(self, change):
-        """Handles changes on the widgets used to pick hte value of the initial parameter of the 1 victoreen function"""
+        """
+        Handles changes on the widgets used to pick the value of the initial
+        parameter of the 2 victoreen function
+        """
         if change.new == "victoreen":
             self._list_reduce_splines.children[7].disabled = False
             self._list_reduce_splines.children[8].disabled = False

@@ -3,62 +3,62 @@
 
 # In[ ]:
 
-"""
-Naming style : CapitalizedWords
-Regroups all the possible classes that can be used used as iterable in the Interface class
-For now only Dataset
-"""
+import numpy as np
+import pandas as pd
+import glob
+import os
 
-try:
-    import numpy as np
-    import pandas as pd
-    import glob
-    import os
+import ipywidgets as widgets
+from ipywidgets import interact, Button, Layout, interactive, fixed
+from IPython.display import display, Markdown, Latex, clear_output
 
-    import ipywidgets as widgets
-    from ipywidgets import interact, Button, Layout, interactive, fixed
-    from IPython.display import display, Markdown, Latex, clear_output
+from datetime import datetime
+import pickle
 
-    from datetime import datetime
-    import pickle
-
-    import tables as tb
-
-except ModuleNotFoundError:
-    raise ModuleNotFoundError(
-        """The following packages must be installed: numpy, pandas ipywidgets, iPython, thorondor and pytables.""")
-
+import tables as tb
 
 class Dataset():
-    """A new instance of the Dataset class will be initialized for each Dataset saved in the data folder. This object is then modified by the class gui
-        For each Dataset, all the different dataframes that will be created as well as specific information e.g. E0 the edge jump can be find as attributes
-        of this class. Certain attributes are instanced directly with the class, such as :
-            _ Name of Dataset
-            _ Path of original Dataset
-            _ timestamp
+    """A new instance of the Dataset class will be initialized for each Dataset
+    saved in the data folder. This object is then modified by the class gui
+    For each Dataset, all the different dataframes that will be created as well
+    as specific information e.g. E0 the edge jump can be find as attributes
+    of this class. Certain attributes are instanced directly with the class,
+    such as :
+        _ Name of Dataset
+        _ Path of original Dataset
+        _ timestamp
 
-        At the end of the data reduction, each Dataset should have at least three different data sets as attributes, saved as pandas.DataFrame,
-            _ df : Original data
-            _ shifted_df : Is one shifts the energy 
-            _ reduced_df : If one applies some background reduction or normalization method 
-            _ reduced_df_splines : If one applied the specific Splines background reduction and normalization method.
+    At the end of the data reduction, each Dataset should have at least three
+    different data sets as attributes, saved as pandas.DataFrame:
+        _ df : Original data
+        _ shifted_df : Is one shifts the energy
+        _ reduced_df : If one applies some background reduction or
+           normalization method
+        _ reduced_df_splines : If one applied the specific Splines background
+           reduction and normalization method.
 
-        The attributes of the class can be saved as an hdf5 file as well by using the Dataset.to_hdf5 fucntion.
-        The pandas.DataFrame.to_hdf and pandas.Series.to_hdf5 functions have been use to save the data as hdf5, please use the complimentary functions 
-        pandas.read_hdf to retrieve the informations.
+    The attributes of the class can be saved as an hdf5 file as well by using
+    the Dataset.to_hdf5 fucntion.
+    The pandas.DataFrame.to_hdf and pandas.Series.to_hdf5 functions have been
+    used to save the data as hdf5, please use the complimentary functions
+    pandas.read_hdf to retrieve the informations.
 
-        A Logbook entry might also be associated, under Dataset.logbook_entry
+    A Logbook entry might also be associated, under Dataset.logbook_entry
 
-        It is possible to add commentaries for each Dataset by using the Dataset.comment() and to specify some additional inf with the function
-        Dataset.metadata()
+    It is possible to add commentaries for each Dataset by using the
+    Dataset.comment() and to specify some additional inf with the function
+    Dataset.metadata()
 
-        Each Dataset can be retrieved by using the function Dataset.unpickle() with argument the path of the saved Class.
+    Each Dataset can be retrieved by using the function Dataset.unpickle()
+    with argument the path of the saved Class.
 
-        THE DATASETS CLASS IS MEANT TO BE READ VIA THE thorondor.gui CLASS !!
-        """
+    THE DATASETS CLASS IS MEANT TO BE READ VIA THE thorondor.gui CLASS !!
+    """
 
     def __init__(self, df, path, name, savedir):
-        """Initialiaze the Dataset class, some metadata can be associated as well
+        """
+        Initialiaze the Dataset class,
+        some metadata can be associated as well
         """
         self.saving_directory = savedir
         self.df = df
@@ -113,7 +113,8 @@ class Dataset():
         self.pickle()
 
     def comment(self, prompt, eraseall=False):
-        """Precise if you want to erase the previous comments, type your comment as a string
+        """Precise if you want to erase the previous comments,
+        type your comment as a string
         """
         try:
             if eraseall:
@@ -136,9 +137,13 @@ class Dataset():
         return repr(self)
 
     def to_hdf5(self, filename):
-        """ This is a simple way to save the data as hdf5 file, each group must subsequently be opened via the pandas.read_hdf() method.
-            E.g.: pd.read_hdf("DatasetXXX.h5", "Dataframes/fit_df")
-            The metadata is saved under the metadata attribute, see with pd.read_hdf("DatasetXXX.h5", "metadata")"""
+        """
+        This is a simple way to save the data as hdf5 file, each group must
+        subsequently be opened via the pandas.read_hdf() method.
+        E.g.: pd.read_hdf("DatasetXXX.h5", "Dataframes/fit_df")
+        The metadata is saved under the metadata attribute, see with
+        pd.read_hdf("DatasetXXX.h5", "metadata")
+        """
         try:
 
             StringDict = {keys: [
@@ -162,10 +167,17 @@ class Dataset():
             raise e
 
     def to_nxs(self):
-        """hdf5 alias. Since thorondor only proceeds to the analysis of the data and does not directly handle the output of instruments, the NeXuS data format can be used to save the Dataset class,
-        but the architecture follows the processed data file, metadata follows only if given by the user.
-        Each dataframe used in thorondor is saved in roor.NXentry.NXdata.<dataframe> as a table, the description of the table gives the column names.
-        An error might raise due to fact that we use unicode character to write mu, this is not important. Use pytables.
+        """hdf5 alias. Since thorondor only proceeds to the analysis of the
+        data and does not directly handle the output of instruments, the NeXuS
+        data format can be used to save the Dataset class, but the architecture
+        follows the processed data file, metadata follows only if given by
+        the user.
+        Each dataframe used in thorondor is saved in
+        root.NXentry.NXdata.<dataframe> as a table, the description of the table
+        gives the column names.
+        An error might raise due to fact that we use unicode character to write
+        mu, this is not important.
+        Uses pytables.
         """
         try:
 
