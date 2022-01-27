@@ -17,6 +17,7 @@ import pickle
 
 import tables as tb
 
+
 class Dataset():
     """A new instance of the Dataset class will be initialized for each Dataset
     saved in the data folder. This object is then modified by the class gui

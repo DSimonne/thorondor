@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import glob
 import errno
 import os
@@ -16,11 +15,8 @@ import math
 
 import lmfit
 from lmfit import minimize, Parameters, Parameter
-from lmfit.models import LinearModel, ConstantModel, QuadraticModel, PolynomialModel, StepModel
-from lmfit.models import GaussianModel, LorentzianModel, SplitLorentzianModel, VoigtModel, PseudoVoigtModel
-from lmfit.models import MoffatModel, Pearson7Model, StudentsTModel, BreitWignerModel, LognormalModel, ExponentialGaussianModel, SkewedGaussianModel, SkewedVoigtModel, DonaichModel
+from lmfit.models import *
 import corner
-import numdifftools
 from scipy.stats import chisquare
 
 import ipywidgets as widgets
@@ -32,35 +28,36 @@ from scipy import optimize, signal
 from scipy import sparse
 
 from datetime import datetime
-from importlib import reload
 import pickle
 import inspect
-import warnings
 
 import tables as tb
-
-from matplotlib import rcParams
-rcParams['font.serif'] = 'Times'
-rcParams['font.size'] = '14'
 
 from thorondor.gui_iterable import Dataset
 
 
 class Interface():
-    """This  class is a Graphical User Interface (gui) that is meant to be used to process important amount of XAS datasets that focus on the same energy range and absoption edge.
-        There are two ways of initializing the procedure in a jupyter notebook:
-            _ gui = thorondor.gui.Interface(); One will have to write the name of the data folder in which all his datasets are saved.
-            _ gui = thorondor.gui.Interface.get_class_list(data_folder = "<yourdata_folder>") if one has already worked on a Dataset and wishes to retrieve his work
+    """
+    This  class is a Graphical User Interface (gui) that is meant to be used
+    to process important amount of XAS datasets that focus on the same energy
+    range and absoption edge.
+    There are two ways of initializing the procedure in a jupyter notebook:
+        _ gui = thorondor.gui.Interface(); One will have to write the name of
+            the data folder in which all his datasets are saved.
+        _ gui = thorondor.gui.Interface.get_class_list(data_folder =
+            "<yourdata_folder>") if one has already worked on a Dataset and
+            wishes to retrieve his work
 
-        This class makes extensive use of the ipywidgets and is thus meant to be used with a jupyter notebook.
-        Additional informations are provided in the "ReadMe" tab of the gui.
-
-        The necessary Python packages are : numpy, pandas, matplotlib, glob, errno, os, shutil, ipywidgets, IPython, scipy, datetime, importlib, pickle, lmfit
-        lmfit, xlrd, corner and inspect.
+    This class makes extensive use of the ipywidgets and is thus meant to
+    be used with a jupyter notebook.
+    Additional informations are provided in the "ReadMe" tab of the gui.
     """
 
     def __init__(self, class_list=False):
-        """All the widgets for the gui are defined here. Two different initialization procedures are possible depending on whether or not a class_list is given in entry.
+        """
+        All the widgets for the gui are defined here. Two different
+        initialization procedures are possible depending on whether or not a
+        class_list is given in entry.
         """
 
         self.work_dir = "./"
@@ -93,8 +90,10 @@ class Interface():
                 self.new_energy_column[1] - self.new_energy_column[0], 2)
 
             # Take shifts into account
-            self.new_energy_column = np.linspace(self.new_energy_column[0]-20, self.new_energy_column[-1]+20, int(
-                ((self.new_energy_column[-1]+20) - (self.new_energy_column[0]-20))/self.interpol_step + 1))
+            self.new_energy_column = np.linspace(
+                self.new_energy_column[0]-20,
+                self.new_energy_column[-1]+20,
+                int(((self.new_energy_column[-1]+20) - (self.new_energy_column[0]-20))/self.interpol_step + 1))
 
         elif not class_list:
             self.class_list = []
@@ -103,73 +102,74 @@ class Interface():
             self.interpol_step = 0.05
 
         # Widgets for the initialization
-        self._list_widgets_init = interactive(self.class_listInitialisation,
-                                              data_folder=widgets.Text(
-                                                  value="data_folder",
-                                                  placeholder='<Yourdata_folder>',
-                                                  description="Data folder:",
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}),
-                                              fix_name=widgets.Checkbox(
-                                                  value=False,
-                                                  description='Fix the name of the folder.',
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}),
-                                              create_bool=widgets.Checkbox(
-                                                  value=False,
-                                                  description='Create/check subdirectories for the program.',
-                                                  disabled=True,
-                                                  style={
-                                                      'description_width': 'initial'},
-                                                  layout=Layout(width="70%")),
-                                              data_type=widgets.Dropdown(
-                                                  options=[
-                                                      ".txt", ".dat", ".csv", ".xlsx", ".nxs"],
-                                                  value=".txt",
-                                                  description='Data type:',
-                                                  disabled=True,
-                                                  style={'description_width': 'initial'}),
-                                              delimiter_type=widgets.Dropdown(
-                                                  options=[
-                                                      ("Comma", ","), ("Tabulation", "\t"), ("Semicolon", ";"), ("Space", " ")],
-                                                  value="\t",
-                                                  description='Column delimiter type:',
-                                                  disabled=True,
-                                                  style={'description_width': 'initial'}),
-                                              decimal_separator=widgets.Dropdown(
-                                                  options=[
-                                                      ("Dot", "."), ("Comma", ",")],
-                                                  value=".",
-                                                  description='Decimal delimiter type:',
-                                                  disabled=True,
-                                                  style={'description_width': 'initial'}),
-                                              marker=widgets.Checkbox(
-                                                  value=False,
-                                                  description="Initial and final markers",
-                                                  disabled=True,
-                                                  style={'description_width': 'initial'}),
-                                              initial_marker=widgets.Text(
-                                                  value="BEGIN",
-                                                  placeholder='<initial_marker>',
-                                                  description="Initial marker:",
-                                                  disabled=True,
-                                                  style={'description_width': 'initial'}),
-                                              final_marker=widgets.Text(
-                                                  value="END",
-                                                  placeholder='<final_marker>',
-                                                  description="Final marker:",
-                                                  disabled=True,
-                                                  style={'description_width': 'initial'}),
-                                              delete_bool=widgets.Checkbox(
-                                                  value=False,
-                                                  description='Delete all data and reset work !',
-                                                  disabled=True,
-                                                  style={'description_width': 'initial'}),
-                                              work_bool=widgets.Checkbox(
-                                                  value=False,
-                                                  description='Start working !',
-                                                  disabled=True,
-                                                  style={'description_width': 'initial'}))
+        self._list_widgets_init = interactive(
+            self.class_listInitialisation,
+            data_folder=widgets.Text(
+                value="data_folder",
+                placeholder='<Yourdata_folder>',
+                description="Data folder:",
+                disabled=False,
+                style={'description_width': 'initial'}),
+            fix_name=widgets.Checkbox(
+                value=False,
+                description='Fix the name of the folder.',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            create_bool=widgets.Checkbox(
+                value=False,
+                description='Create/check subdirectories for the program.',
+                disabled=True,
+                style={
+                    'description_width': 'initial'},
+                layout=Layout(width="70%")),
+            data_type=widgets.Dropdown(
+                options=[
+                    ".txt", ".dat", ".csv", ".xlsx", ".nxs"],
+                value=".txt",
+                description='Data type:',
+                disabled=True,
+                style={'description_width': 'initial'}),
+            delimiter_type=widgets.Dropdown(
+                options=[
+                    ("Comma", ","), ("Tabulation", "\t"), ("Semicolon", ";"), ("Space", " ")],
+                value="\t",
+                description='Column delimiter type:',
+                disabled=True,
+                style={'description_width': 'initial'}),
+            decimal_separator=widgets.Dropdown(
+                options=[
+                    ("Dot", "."), ("Comma", ",")],
+                value=".",
+                description='Decimal delimiter type:',
+                disabled=True,
+                style={'description_width': 'initial'}),
+            marker=widgets.Checkbox(
+                value=False,
+                description="Initial and final markers",
+                disabled=True,
+                style={'description_width': 'initial'}),
+            initial_marker=widgets.Text(
+                value="BEGIN",
+                placeholder='<initial_marker>',
+                description="Initial marker:",
+                disabled=True,
+                style={'description_width': 'initial'}),
+            final_marker=widgets.Text(
+                value="END",
+                placeholder='<final_marker>',
+                description="Final marker:",
+                disabled=True,
+                style={'description_width': 'initial'}),
+            delete_bool=widgets.Checkbox(
+                value=False,
+                description='Delete all data and reset work !',
+                disabled=True,
+                style={'description_width': 'initial'}),
+            work_bool=widgets.Checkbox(
+                value=False,
+                description='Start working !',
+                disabled=True,
+                style={'description_width': 'initial'}))
 
         self._list_widgets_init.children[1].observe(
             self.name_handler, names="value")
@@ -194,30 +194,31 @@ class Interface():
         ])
 
         # Widgets for the data visualisation
-        self._list_data = interactive(self.print_data,
-                                      spec=widgets.Dropdown(
-                                          options=self.class_list,
-                                          description='Select the Dataset:',
-                                          disabled=True,
-                                          style={
-                                              'description_width': 'initial'},
-                                          layout=Layout(width='60%')),
-                                      printed_df=widgets.Dropdown(
-                                          options=[
-                                              ("Renamed data", "df"), ("Shifted data",
-                                                                       "shifted_df"), ("Reduced data", "reduced_df"),
-                                              ("Reduced by Splines",
-                                                  "reduced_df_splines"), ("Fitted data", "fit_df")
-                                          ],
-                                          value="df",
-                                          description='Select the dataframe:',
-                                          disabled=True,
-                                          style={'description_width': 'initial'}),
-                                      show_bool=widgets.Checkbox(
-                                          value=False,
-                                          description='Show dataframe',
-                                          disabled=True,
-                                          style={'description_width': 'initial'}))
+        self._list_data = interactive(
+            self.print_data,
+            spec=widgets.Dropdown(
+                options=self.class_list,
+                description='Select the Dataset:',
+                disabled=True,
+                style={
+                    'description_width': 'initial'},
+                layout=Layout(width='60%')),
+            printed_df=widgets.Dropdown(
+                options=[
+                    ("Renamed data", "df"), ("Shifted data",
+                                             "shifted_df"), ("Reduced data", "reduced_df"),
+                    ("Reduced by Splines",
+                     "reduced_df_splines"), ("Fitted data", "fit_df")
+                ],
+                value="df",
+                description='Select the dataframe:',
+                disabled=True,
+                style={'description_width': 'initial'}),
+            show_bool=widgets.Checkbox(
+                value=False,
+                description='Show dataframe',
+                disabled=True,
+                style={'description_width': 'initial'}))
         self._list_data.children[2].observe(
             self.show_data_handler, names="value")
 
@@ -225,127 +226,151 @@ class Interface():
             self._list_data.children[1:3]), self._list_data.children[-1]])
 
         # Widgets for the tools
-        self.tab_tools = interactive(self.treat_data,
-                                     method=widgets.ToggleButtons(
-                                         options=[
-                                             ("Flip", "flip"), ("Stable Monitor Norm.", "stable_monitor"), (
-                                                 "Relative shifts correction", "relative_shift"),
-                                             ("Global shift correction", "global_shift"), ("Gas correction", "gas"), (
-                                                 "Membrane correction", "membrane"), ("Deglitching", "deglitching"),
-                                             ("Merge energies", "merge"), ("Determine errors",
-                                                                           "errors"), ("Import data", "import"),
-                                             ("Linear Combination Fit",
-                                                 "LCF"), ("Save as .nxs (NeXuS)", "nexus"),
-                                         ],
-                                         value="relative_shift",
-                                         description='Tools:',
-                                         disabled=True,
-                                         button_style="",  # 'success', 'info', 'warning', 'danger' or ''
-                                         tooltips=[
-                                             'Correct the possible energy shifts between datasets', "Correct a global energy shift", 'Correct for gas absorption',
-                                             "Correct for membrane absorption", "Deglitch alien points", "Merge datasets together and export as csv",
-                                             "Determine errors, see ReadMe"
-                                         ],
-                                         style={'description_width': 'initial'}),
-                                     plot_bool=widgets.Checkbox(
-                                         value=False,
-                                         description='Fix tool',
-                                         disabled=True,
-                                         style={'description_width': 'initial'}))
+        self.tab_tools = interactive(
+            self.treat_data,
+            method=widgets.ToggleButtons(
+                options=[
+                    ("Flip", "flip"),
+                    ("Stable Monitor Norm.", "stable_monitor"),
+                    ("Relative shifts correction", "relative_shift"),
+                    ("Global shift correction", "global_shift"),
+                    ("Gas correction", "gas"),
+                    ("Membrane correction", "membrane"),
+                    ("Deglitching", "deglitching"),
+                    ("Merge energies", "merge"),
+                    ("Determine errors", "errors"),
+                    ("Import data", "import"),
+                    ("Linear Combination Fit", "LCF"),
+                    ("Save as .nxs (NeXuS)", "nexus"),
+                ],
+                value="relative_shift",
+                description='Tools:',
+                disabled=True,
+                button_style="",
+                tooltips=[
+                    'Correct the possible energy shifts between datasets',
+                    "Correct a global energy shift",
+                    'Correct for gas absorption',
+                    "Correct for membrane absorption",
+                    "Deglitch alien points",
+                    "Merge datasets together and export as csv",
+                    "Determine errors, see ReadMe"
+                ],
+                style={'description_width': 'initial'}),
+            plot_bool=widgets.Checkbox(
+                value=False,
+                description='Fix tool',
+                disabled=True,
+                style={'description_width': 'initial'}))
         self.tab_tools.children[1].observe(
             self.tools_bool_handler, names="value")
 
-        self._list_flip = interactive(self.flip_axis,
-                                      spec_number=widgets.SelectMultiple(
-                                          options=self.class_list,
-                                          value=self.class_list[0:1],
-                                          rows=5,
-                                          description='Spectra to correct:',
-                                          disabled=False,
-                                          style={
-                                              'description_width': 'initial'},
-                                          layout=Layout(display="flex", flex_flow='column')),
-                                      df=widgets.Dropdown(
-                                          options=[("Renamed data", "df"), ("Shifted data", "shifted_df"), (
-                                              "Reduced data", "reduced_df"), ("Reduced by Splines", "reduced_df_splines")],
-                                          value="df",
-                                          description='Use the dataframe:',
-                                          disabled=False,
-                                          style={'description_width': 'initial'}),
-                                      x=widgets.Dropdown(
-                                          options=[("Energy", "energy")],
-                                          value="energy",
-                                          description='Pick an x-axis',
-                                          disabled=False,
-                                          style={'description_width': 'initial'}),
-                                      y=widgets.Dropdown(
-                                          options=[
-                                              ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                  "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                              ("Reference shift", "reference_shift"), ("First normalized \u03BC",
-                                                                                       "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                              ("Membrane corrected", "membrane_corrected"), (
-                                                  "Gas & membrane corrected", "gas_membrane_corrected"),
-                                              ("Background corrected", "background_corrected"), (
-                                                  "Second normalized \u03BC", "second_normalized_\u03BC"),
-                                              ("Fit", "fit"), ("Weights", "weights"), ("RMS",
-                                                                                       "RMS"), ("User error", "user_error")
-                                          ],
-                                          value="value",
-                                          description='Pick an y-axis',
-                                          disabled=False,
-                                          style={'description_width': 'initial'}),
-                                      shift=widgets.FloatText(
-                                          step=0.1,
-                                          value=1,
-                                          description='Shift (a. u.):',
-                                          disabled=False,
-                                          style={'description_width': 'initial'}))
-        self.widget_list_flip = widgets.VBox([self._list_flip.children[0], widgets.HBox(
-            self._list_flip.children[1:4]), self._list_flip.children[-2], self._list_flip.children[-1]])
+        self._list_flip = interactive(
+            self.flip_axis,
+            spec_number=widgets.SelectMultiple(
+                options=self.class_list,
+                value=self.class_list[0:1],
+                rows=5,
+                description='Spectra to correct:',
+                disabled=False,
+                style={
+                    'description_width': 'initial'},
+                layout=Layout(display="flex", flex_flow='column')),
+            df=widgets.Dropdown(
+                options=[
+                    ("Renamed data", "df"),
+                    ("Shifted data", "shifted_df"),
+                    ("Reduced data", "reduced_df"),
+                    ("Reduced by Splines", "reduced_df_splines")
+                ],
+                value="df",
+                description='Use the dataframe:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            x=widgets.Dropdown(
+                options=[("Energy", "energy")],
+                value="energy",
+                description='Pick an x-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            y=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                    ("Fit", "fit"),
+                    ("Weights", "weights"),
+                    ("RMS", "RMS"),
+                    ("User error", "user_error")
+                ],
+                value="value",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            shift=widgets.FloatText(
+                step=0.1,
+                value=1,
+                description='Shift (a. u.):',
+                disabled=False,
+                style={'description_width': 'initial'}))
+        self.widget_list_flip = widgets.VBox([
+            self._list_flip.children[0],
+            widgets.HBox(self._list_flip.children[1:4]),
+            self._list_flip.children[-2],
+            self._list_flip.children[-1]
+        ])
 
-        self._list_stable_monitor = interactive(self.stable_monitor_method,
-                                                spec_number=widgets.SelectMultiple(
-                                                    options=self.class_list,
-                                                    value=self.class_list[0:1],
-                                                    rows=5,
-                                                    description='Spectra to correct:',
-                                                    disabled=False,
-                                                    style={
-                                                        'description_width': 'initial'},
-                                                    layout=Layout(display="flex", flex_flow='column')),
-                                                df=widgets.Dropdown(
-                                                    options=[("Renamed data", "df"), ("Shifted data", "shifted_df"), (
-                                                        "Reduced data", "reduced_df"), ("Reduced by Splines", "reduced_df_splines")],
-                                                    value="df",
-                                                    description='Use the dataframe:',
-                                                    disabled=False,
-                                                    style={'description_width': 'initial'}),
-                                                sample_intensity=widgets.Dropdown(
-                                                    options=[
-                                                        ("Select a value", "value"), ("Sample intensity", "sample_intensity"), ("\u03BC", "\u03BC")],
-                                                    value="value",
-                                                    description='Select the sample data',
-                                                    disabled=False,
-                                                    style={
-                                                        'description_width': 'initial'},
-                                                    layout=Layout(width="50%")),
-                                                reference_intensity=widgets.Dropdown(
-                                                    options=[("Select a value", "value"), ("Mesh", "mesh"), (
-                                                        "Reference first normalization", "reference_first_norm"), ("Reference shift", "reference_shift")],
-                                                    value="value",
-                                                    description='Select the reference.',
-                                                    disabled=False,
-                                                    style={
-                                                        'description_width': 'initial'},
-                                                    layout=Layout(width="50%")),
-                                                compute_bool=widgets.Checkbox(
-                                                    value=False,
-                                                    description='Compute the ratio between sample intensity and reference intensity',
-                                                    disabled=False,
-                                                    style={
-                                                        'description_width': 'initial'},
-                                                    layout=Layout(width="80%")),)
+        self._list_stable_monitor = interactive(self
+            .stable_monitor_method,
+            spec_number=widgets.SelectMultiple(
+                options=self.class_list,
+                value=self.class_list[0:1],
+                rows=5,
+                description='Spectra to correct:',
+                disabled=False,
+                style={
+                    'description_width': 'initial'},
+                layout=Layout(display="flex", flex_flow='column')),
+            df=widgets.Dropdown(
+                options=[("Renamed data", "df"), ("Shifted data", "shifted_df"), (
+                    "Reduced data", "reduced_df"), ("Reduced by Splines", "reduced_df_splines")],
+                value="df",
+                description='Use the dataframe:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            sample_intensity=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"), ("Sample intensity", "sample_intensity"), ("\u03BC", "\u03BC")],
+                value="value",
+                description='Select the sample data',
+                disabled=False,
+                style={
+                    'description_width': 'initial'},
+                layout=Layout(width="50%")),
+            reference_intensity=widgets.Dropdown(
+                options=[("Select a value", "value"), ("Mesh", "mesh"), (
+                    "Reference first normalization", "reference_first_norm"), ("Reference shift", "reference_shift")],
+                value="value",
+                description='Select the reference.',
+                disabled=False,
+                style={
+                    'description_width': 'initial'},
+                layout=Layout(width="50%")),
+            compute_bool=widgets.Checkbox(
+                value=False,
+                description='Compute the ratio between sample intensity and reference intensity',
+                disabled=False,
+                style={
+                    'description_width': 'initial'},
+                layout=Layout(width="80%")),)
         self.widget_list_stable_monitor = widgets.VBox([
             self._list_stable_monitor.children[0], self._list_stable_monitor.children[1], widgets.HBox(
                 self._list_stable_monitor.children[2:4]),
@@ -919,7 +944,7 @@ class Interface():
                                                        value="LSF",
                                                        description='Pick reduction method:',
                                                        disabled=True,
-                                                       button_style="",  # 'success', 'info', 'warning', 'danger' or ''
+                                                       button_style="",
                                                        tooltips=['Least Square method', 'Chebyshev Polynomials', "Multiple polynoms derived on short Intervals", "Subtraction of a spline",
                                                                  "Pre-edge and post-edge splines determination", "Normalize spectra by maximum intensity value"],
                                                        style={'description_width': 'initial'}),
@@ -1487,7 +1512,7 @@ class Interface():
                                                   value="Zero",
                                                   description='Plot:',
                                                   disabled=True,
-                                                  button_style="",  # 'success', 'info', 'warning', 'danger' or ''
+                                                  button_style="",
                                                   tooltips=[
                                                       'Nothing is plotted', 'We plot one Dataset', 'We plot all the spectra'],
                                                   style={'description_width': 'initial'}))
@@ -5388,7 +5413,8 @@ class Interface():
             axs[1].set_xlim(energy[number][v1[number]],
                             energy[number][v2[number]])
 
-            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]:v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
+            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]
+                        :v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
 
             print("Channel 1:", v1[number], ";",
                   "energy:", energy[number][v1[number]])
