@@ -85,7 +85,7 @@ class Interface():
                 "Dataset_"+f.split("/")[-1].split(".")[0] for f in path_to_classes]
 
             self.new_energy_column = np.round(
-                self.class_list[0].df["energy"].values, 2)
+                self.class_list[0].df["Energy"].values, 2)
             self.interpol_step = np.round(
                 self.new_energy_column[1] - self.new_energy_column[0], 2)
 
@@ -103,7 +103,7 @@ class Interface():
 
         # Widgets for the initialization
         self._list_widgets_init = interactive(
-            self.class_listInitialisation,
+            self.class_list_init,
             data_folder=widgets.Text(
                 value="data_folder",
                 placeholder='<Yourdata_folder>',
@@ -115,7 +115,7 @@ class Interface():
                 description='Fix the name of the folder.',
                 disabled=False,
                 style={'description_width': 'initial'}),
-            create_bool=widgets.Checkbox(
+            create_folders=widgets.Checkbox(
                 value=False,
                 description='Create/check subdirectories for the program.',
                 disabled=True,
@@ -160,12 +160,12 @@ class Interface():
                 description="Final marker:",
                 disabled=True,
                 style={'description_width': 'initial'}),
-            delete_bool=widgets.Checkbox(
+            delete=widgets.Checkbox(
                 value=False,
                 description='Delete all data and reset work !',
                 disabled=True,
                 style={'description_width': 'initial'}),
-            work_bool=widgets.Checkbox(
+            work=widgets.Checkbox(
                 value=False,
                 description='Start working !',
                 disabled=True,
@@ -214,7 +214,7 @@ class Interface():
                 description='Select the dataframe:',
                 disabled=True,
                 style={'description_width': 'initial'}),
-            show_bool=widgets.Checkbox(
+            show=widgets.Checkbox(
                 value=False,
                 description='Show dataframe',
                 disabled=True,
@@ -288,8 +288,8 @@ class Interface():
                 disabled=False,
                 style={'description_width': 'initial'}),
             x=widgets.Dropdown(
-                options=[("Energy", "energy")],
-                value="energy",
+                options=[("Energy", "Energy")],
+                value="Energy",
                 description='Pick an x-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
@@ -364,7 +364,7 @@ class Interface():
                 style={
                     'description_width': 'initial'},
                 layout=Layout(width="50%")),
-            compute_bool=widgets.Checkbox(
+            compute=widgets.Checkbox(
                 value=False,
                 description='Compute the ratio between sample intensity and reference intensity',
                 disabled=False,
@@ -394,8 +394,8 @@ class Interface():
                                                     style={'description_width': 'initial'}),
                                                 x=widgets.Dropdown(
                                                     options=[
-                                                        ("Energy", "energy")],
-                                                    value="energy",
+                                                        ("Energy", "Energy")],
+                                                    value="Energy",
                                                     description='Pick an x-axis',
                                                     disabled=False,
                                                     style={'description_width': 'initial'}),
@@ -448,8 +448,8 @@ class Interface():
                                                   style={'description_width': 'initial'}),
                                               x=widgets.Dropdown(
                                                   options=[
-                                                      ("Energy", "energy")],
-                                                  value="energy",
+                                                      ("Energy", "Energy")],
+                                                  value="Energy",
                                                   description='Pick an x-axis',
                                                   disabled=False,
                                                   style={'description_width': 'initial'}),
@@ -500,8 +500,8 @@ class Interface():
                                                     style={'description_width': 'initial'}),
                                                 x=widgets.Dropdown(
                                                     options=[
-                                                        ("Energy", "energy")],
-                                                    value="energy",
+                                                        ("Energy", "Energy")],
+                                                    value="Energy",
                                                     description='Pick an x-axis',
                                                     disabled=False,
                                                     style={'description_width': 'initial'}),
@@ -564,8 +564,8 @@ class Interface():
                                                          style={'description_width': 'initial'}),
                                                      x=widgets.Dropdown(
                                                          options=[
-                                                             ("Energy", "energy")],
-                                                         value="energy",
+                                                             ("Energy", "Energy")],
+                                                         value="Energy",
                                                          description='Pick an x-axis',
                                                          disabled=False,
                                                          style={'description_width': 'initial'}),
@@ -624,8 +624,8 @@ class Interface():
                                                  disabled=False),
                                              x=widgets.Dropdown(
                                                  options=[
-                                                     ("Energy", "energy")],
-                                                 value="energy",
+                                                     ("Energy", "Energy")],
+                                                 value="Energy",
                                                  description='Pick an x-axis',
                                                  disabled=False,
                                                  style={'description_width': 'initial'}),
@@ -675,8 +675,8 @@ class Interface():
                                                     style={'description_width': 'initial'}),
                                                 x=widgets.Dropdown(
                                                     options=[
-                                                        ("Energy", "energy")],
-                                                    value="energy",
+                                                        ("Energy", "Energy")],
+                                                    value="Energy",
                                                     description='Pick an x-axis',
                                                     disabled=False,
                                                     style={'description_width': 'initial'}),
@@ -733,8 +733,8 @@ class Interface():
                                                        layout=Layout(width="60%")),
                                                    xcol=widgets.Dropdown(
                                                        options=[
-                                                           ("Energy", "energy")],
-                                                       value="energy",
+                                                           ("Energy", "Energy")],
+                                                       value="Energy",
                                                        description='Pick an x-axis',
                                                        disabled=False,
                                                        style={'description_width': 'initial'}),
@@ -781,7 +781,7 @@ class Interface():
                                                        description='Direction if odd:',
                                                        disabled=False,
                                                        style={'description_width': 'initial'}),
-                                                   compute_bool=widgets.Checkbox(
+                                                   compute=widgets.Checkbox(
                                                        value=False,
                                                        description='Compute errors',
                                                        disabled=False,
@@ -824,8 +824,8 @@ class Interface():
                                          disabled=False,
                                          style={'description_width': 'initial'}),
                                      x=widgets.Dropdown(
-                                         options=[("Energy", "energy")],
-                                         value="energy",
+                                         options=[("Energy", "Energy")],
+                                         value="Energy",
                                          description='Pick an x-axis',
                                          disabled=False,
                                          style={'description_width': 'initial'}),
@@ -1310,7 +1310,7 @@ class Interface():
                                                        description='Select the dataframe:',
                                                        disabled=True,
                                                        style={'description_width': 'initial'}),
-                                                   show_bool=widgets.Checkbox(
+                                                   show=widgets.Checkbox(
                                                        value=False,
                                                        description='Fix dataframe.',
                                                        disabled=True,
@@ -1323,8 +1323,8 @@ class Interface():
         self._list_define_model = interactive(self.define_model,
                                               xcol=widgets.Dropdown(
                                                   options=[
-                                                      ("Energy", "energy")],
-                                                  value="energy",
+                                                      ("Energy", "Energy")],
+                                                  value="Energy",
                                                   description='Pick an x-axis',
                                                   disabled=False,
                                                   style={'description_width': 'initial'}),
@@ -1463,8 +1463,8 @@ class Interface():
                                                   style={'description_width': 'initial'}),
                                               x=widgets.Dropdown(
                                                   options=[
-                                                      ("Energy", "energy")],
-                                                  value="energy",
+                                                      ("Energy", "Energy")],
+                                                  value="Energy",
                                                   description='Pick an x-axis',
                                                   disabled=True,
                                                   style={'description_width': 'initial'}),
@@ -1487,7 +1487,7 @@ class Interface():
                                                   style={'description_width': 'initial'}),
                                               x_axis=widgets.Text(
                                                   value="Energy",
-                                                  placeholder="energy",
+                                                  placeholder="Energy",
                                                   description='Type the name of the x axis:',
                                                   disabled=True,
                                                   continuous_update=False,
@@ -1904,26 +1904,44 @@ class Interface():
         return Interface(class_list)
 
     # Initialization interactive function, if no previous work had been done
-    def class_listInitialisation(self, data_folder, fix_name, create_bool, data_type, delimiter_type, decimal_separator, marker, initial_marker, final_marker, delete_bool, work_bool):
-        """Function that generates or updates three subfolders in the "work_dir":
-            _ DataFiles where you will save your data files.
-            _ DataFiles/Data where the pure data files will be saved(stripped of all metadata), in .txt after cleaning of strings.
-            _ DataFiles/Classes where the data will be saved as a Dataset class at the end of your work.
+    def class_list_init(
+        self,
+        data_folder,
+        fix_name,
+        create_folders,
+        data_type,
+        delimiter_type,
+        decimal_separator,
+        marker,
+        initial_marker,
+        final_marker,
+        delete,
+        work
+    ):
+        """
+        Function that generates or updates three subfolders in the "work_dir":
+            _ data_folder where you will save your data files.
+            _ data_folder/export_data where the raw data files will be saved
+              (stripped of all metadata), in .txt format
+            _ data_folder/classes where the data will be saved as a Dataset class
+              at the end of your work.
+            _ data_folder/import_data where you can add extra files used in
+              fitting
         """
 
         if fix_name:
             self.data_folder = data_folder
 
             path_original_data = self.work_dir + str(self.data_folder)
-            path_classes = path_original_data + "/Classes"
-            path_data_as_csv = path_original_data + "/Export_data"
-            path_figures = path_original_data + "/Figures"
-            path_import_data = path_original_data + "/Import_data"
+            path_classes = path_original_data + "/classes"
+            path_data_as_csv = path_original_data + "/export_data"
+            path_figures = path_original_data + "/figures"
+            path_import_data = path_original_data + "/import_data"
 
             self.folders = [path_original_data, path_classes,
                             path_data_as_csv, path_figures, path_import_data]
 
-        if fix_name and create_bool:
+        if fix_name and create_folders:
             clear_output = (True)
 
             for folder in self.folders:
@@ -1936,7 +1954,7 @@ class Interface():
                     except Exception as e:
                         raise e
 
-        if fix_name and delete_bool:
+        if fix_name and delete:
             """Deletes the files that are in the subdirectory "data" of the argument directory, 
             To be used if one wants to start the data reduction again and needs a clean data directory"""
             self._list_data.children[0].options = []
@@ -1974,12 +1992,12 @@ class Interface():
             print("Work has been reset")
             clear_output = (True)
 
-        if not work_bool:
+        if not work:
             for w in self._list_data.children[:-1] + self.tab_tools.children[:-1] + self._list_tab_reduce_method.children[:-1] + self._list_define_fitting_df.children[:-1] + self._list_plot_dataset.children[:-1] + self._list_print_logbook.children[:-1]:
                 if not w.disabled:
                     w.disabled = True
 
-        if work_bool:
+        if work:
             print("""We now start to manipulate the data.\nFirst, rename each column and select the one we want to use.""")
 
             self.data_type = data_type
@@ -2036,7 +2054,7 @@ class Interface():
                                         self.file_locations[0], sep=delimiter_type, header=0, names=namae,  usecols=usecol, decimal=decimal_separator).abs()
 
                                 dataset_renamed = dataset_renamed.sort_values(
-                                    "energy").reset_index(drop=True)
+                                    "Energy").reset_index(drop=True)
 
                                 if "\u03BC" not in self.newnames:
                                     dataset_renamed["\u03BC"] = dataset_renamed["sample_intensity"] / \
@@ -2078,11 +2096,11 @@ class Interface():
                                                     dataset_renamed["mesh"]
 
                                             dataset_renamed = dataset_renamed.sort_values(
-                                                "energy").reset_index(drop=True)
+                                                "Energy").reset_index(drop=True)
                                             dataset_renamed.to_csv(
                                                 f"{self.folders[2]}/{n}_renamed.csv", index=False)
-                                            dataset_renamed["energy"] = np.round(
-                                                dataset_renamed["energy"], 2)
+                                            dataset_renamed["Energy"] = np.round(
+                                                dataset_renamed["Energy"], 2)
 
                                         except TypeError:
                                             # In case one Dataset has a different decimal separator
@@ -2099,11 +2117,11 @@ class Interface():
                                                     dataset_renamed["mesh"]
 
                                             dataset_renamed = dataset_renamed.sort_values(
-                                                "energy").reset_index(drop=True)
+                                                "Energy").reset_index(drop=True)
                                             dataset_renamed.to_csv(
                                                 f"{self.folders[2]}/{n}_renamed.csv", index=False)
-                                            dataset_renamed["energy"] = np.round(
-                                                dataset_renamed["energy"], 2)
+                                            dataset_renamed["Energy"] = np.round(
+                                                dataset_renamed["Energy"], 2)
 
                                         except pd.errors.ParserError:
                                             print(
@@ -2181,11 +2199,11 @@ class Interface():
                                                         dataset_renamed["mesh"]
 
                                                 dataset_renamed = dataset_renamed.sort_values(
-                                                    "energy").reset_index(drop=True)
+                                                    "Energy").reset_index(drop=True)
                                                 dataset_renamed.to_csv(
                                                     f"{self.folders[2]}/{n}_renamed.csv", index=False)
-                                                dataset_renamed["energy"] = np.round(
-                                                    dataset_renamed["energy"], 2)
+                                                dataset_renamed["Energy"] = np.round(
+                                                    dataset_renamed["Energy"], 2)
 
                                             except TypeError:
                                                 # In case one Dataset has a different decimal separator
@@ -2202,11 +2220,11 @@ class Interface():
                                                         dataset_renamed["mesh"]
 
                                                 dataset_renamed = dataset_renamed.sort_values(
-                                                    "energy").reset_index(drop=True)
+                                                    "Energy").reset_index(drop=True)
                                                 dataset_renamed.to_csv(
                                                     f"{self.folders[2]}/{n}_renamed.csv", index=False)
-                                                dataset_renamed["energy"] = np.round(
-                                                    dataset_renamed["energy"], 2)
+                                                dataset_renamed["Energy"] = np.round(
+                                                    dataset_renamed["Energy"], 2)
 
                                             except pd.errors.ParserError:
                                                 print(
@@ -2217,9 +2235,9 @@ class Interface():
                                             finally:
                                                 # Store all min and max energy values
                                                 Emin.append(
-                                                    min(dataset_renamed["energy"].values))
+                                                    min(dataset_renamed["Energy"].values))
                                                 Emax.append(
-                                                    max(dataset_renamed["energy"].values))
+                                                    max(dataset_renamed["Energy"].values))
 
                                                 # Append the datasets in class_list
                                                 try:
@@ -2244,16 +2262,16 @@ class Interface():
                                             # Iterate over all the datasets, we drop the duplicate value that could mess up the splines computation
                                             for C in self.class_list:
                                                 self.used_df_init = getattr(
-                                                    C, "df").drop_duplicates("energy")
+                                                    C, "df").drop_duplicates("Energy")
 
-                                                x = self.used_df_init["energy"]
+                                                x = self.used_df_init["Energy"]
 
                                                 interpolated_df = pd.DataFrame({
-                                                    "energy": self.new_energy_column
+                                                    "Energy": self.new_energy_column
                                                 })
 
                                                 # Iterate over all the columns
-                                                for col in self.used_df_init.columns[self.used_df_init.columns != "energy"]:
+                                                for col in self.used_df_init.columns[self.used_df_init.columns != "Energy"]:
 
                                                     y = self.used_df_init[col].values
 
@@ -2402,21 +2420,21 @@ class Interface():
                 nb_columns_in_data = len(df.iloc[0, :])
                 if nb_columns_in_data == 4:
                     self.newnames = [
-                        "energy", "sample_intensity", "mesh", "\u03BC"]
+                        "Energy", "sample_intensity", "mesh", "\u03BC"]
                 elif nb_columns_in_data == 2:
-                    self.newnames = ["energy", "\u03BC"]
+                    self.newnames = ["Energy", "\u03BC"]
                 elif nb_columns_in_data == 3:
-                    self.newnames = ["energy", "mesh", "\u03BC"]
+                    self.newnames = ["Energy", "mesh", "\u03BC"]
                 elif nb_columns_in_data == 5:
-                    self.newnames = ["energy", "sample_intensity",
+                    self.newnames = ["Energy", "sample_intensity",
                                      "mesh", "\u03BC", "reference_shift"]
                 elif nb_columns_in_data == 8:
-                    self.newnames = ["energy", "sample_intensity", "mesh",
+                    self.newnames = ["Energy", "sample_intensity", "mesh",
                                      "\u03BC", "notused", "notused", "notused", "notused"]
                 else:
                     self.newnames = [None] * nb_columns_in_data
 
-                _list_work_bool = interactive(renaming,
+                _list_work = interactive(renaming,
                                               nb_columns=widgets.Dropdown(
                                                   options=list(
                                                       range(nb_columns_in_data)),
@@ -2426,7 +2444,7 @@ class Interface():
                                                   style={'description_width': 'initial'}),
                                               new_name=widgets.Dropdown(
                                                   options=[
-                                                      ("Select a value", "value"), ("Energy", "energy"), ("Sample intensity",
+                                                      ("Select a value", "value"), ("Energy", "Energy"), ("Sample intensity",
                                                                                                           "sample_intensity"), ("\u03BC", "\u03BC"), ("Mesh", "mesh"),
                                                       ("Reference shift", "reference_shift"), ("Reference first normalization",
                                                                                                "reference_first_norm"), ("Not used", "notused"), ("User error", "user_error")
@@ -2436,7 +2454,7 @@ class Interface():
                                                   disabled=False,
                                                   style={'description_width': 'initial'}))
                 little_tab_init = widgets.VBox(
-                    [widgets.HBox(_list_work_bool.children[:2]), _list_work_bool.children[-1]])
+                    [widgets.HBox(_list_work.children[:2]), _list_work.children[-1]])
                 display(little_tab_init)
 
             # except IndexError:
@@ -2450,19 +2468,24 @@ class Interface():
 
     # Visualization interactive function
 
-    def print_data(self, spec, printed_df, show_bool):
-        """Displays the pandas.DataFrame associated to each Dataset, there are currently 4 different possibilities:
+    def print_data(self, spec, printed_df, show):
+        """
+        Displays the pandas.DataFrame associated to each Dataset,
+        there are currently 4 different possibilities:
             _ df : Original data
             _ shifted_df : Is one shifts the energy 
-            _ reduced_df : If one applies some background reduction or normalization method 
-            _ reduced_df_splines : If one applied the specific Splines background reduction and normalization method.
-        Each data frame is automatically saved as a .csv file after creation."""
+            _ reduced_df : If one applies some background reduction or
+              normalization method
+            _ reduced_df_splines : If one applied the specific Splines
+              background reduction and normalization method.
+        Each data frame is automatically saved as a .csv file after creation.
+        """
 
-        if not show_bool:
+        if not show:
             print("Window cleared")
             clear_output(True)
 
-        elif show_bool:
+        elif show:
             used_df = getattr(spec, printed_df)
             if len(used_df.columns) == 0:
                 print(
@@ -2507,23 +2530,25 @@ class Interface():
 
     # Tools interactive sub-functions
     def flip_axis(self, spec_number, df, x, y, shift):
-        """Allows one to crrect a possible flip of the value around the x axis"""
+        """
+        Allows one to crrect a possible flip of the value around the x axis
+        """
 
         if spec_number:
             try:
                 fig, axs = plt.subplots(3, figsize=(16, 16))
 
                 axs[0].set_title('Selected datasets before correction')
-                axs[0].set_xlabel("energy")
+                axs[0].set_xlabel("Energy")
                 axs[0].set_ylabel('NEXAFS intensity')
 
                 axs[1].set_title('Selected datasets after shift')
-                axs[1].set_xlabel("energy")
+                axs[1].set_xlabel("Energy")
                 axs[1].set_ylabel('NEXAFS intensity')
 
                 axs[2].set_title(
                     'Selected datasets after shift, absolute values')
-                axs[2].set_xlabel("energy")
+                axs[2].set_xlabel("Energy")
                 axs[2].set_ylabel('NEXAFS intensity')
 
                 for j, C in enumerate(spec_number):
@@ -2572,7 +2597,7 @@ class Interface():
 
                         # Save work
                         flip_df.to_csv(
-                            f"{self.folders[2]}/{C.name}_Flipped.csv", index=False)
+                            f"{self.folders[2]}/{C.name}_flipped.csv", index=False)
                         C.pickle()
                     print("Flip well applied and saved in same dataframe.")
 
@@ -2589,9 +2614,18 @@ class Interface():
             plt.close()
             print("You need to select at least one Dataset !")
 
-    def stable_monitor_method(self, spec_number, df, sample_intensity, reference_intensity, compute_bool):
+    def stable_monitor_method(
+        self,
+        spec_number,
+        df,
+        sample_intensity,
+        reference_intensity,
+        compute
+    ):
+        """
+        """
 
-        if spec_number and compute_bool:
+        if spec_number and compute:
 
             try:
                 for j, C in enumerate(spec_number):
@@ -2711,7 +2745,7 @@ class Interface():
                         plt.close()
 
                         fig, ax = plt.subplots(1, figsize=(16, 8))
-                        ax.set_xlabel("energy")
+                        ax.set_xlabel("Energy")
                         ax.set_ylabel('NEXAFS')
                         ax.set_title(f'{self.class_list[dataset_index].name}')
                         ax.tick_params(direction='in', labelsize=15, width=2)
@@ -2879,11 +2913,11 @@ class Interface():
                 fig, axs = plt.subplots(2, figsize=(16, 11))
 
                 axs[0].set_title('Selected datasets before the shift')
-                axs[0].set_xlabel("energy")
+                axs[0].set_xlabel("Energy")
                 axs[0].set_ylabel('NEXAFS intensity')
 
                 axs[1].set_title('Selected datasets after the shift')
-                axs[1].set_xlabel("energy")
+                axs[1].set_xlabel("Energy")
                 axs[1].set_ylabel('NEXAFS intensity')
 
                 for j, C in enumerate(spec_number):
@@ -3042,7 +3076,7 @@ class Interface():
             axs[0].set_title('Gas scattering Factor')
             for f in f2:
                 axs[0].plot(energy, f)
-            axs[0].set_xlabel("energy")
+            axs[0].set_xlabel("Energy")
             axs[0].set_ylabel('f2')
             axs[0].legend(labels)
             cmap = matplotlib.cm.get_cmap('Spectral')
@@ -3068,7 +3102,7 @@ class Interface():
                 0, -0.2), fancybox=True, shadow=True, ncol=4)
 
             axs[1].set_title('Gas Transmittance')
-            axs[1].set_xlabel("energy")
+            axs[1].set_xlabel("Energy")
             axs[1].set_ylabel('Transmittance')
             axs[1].yaxis.set_label_position("right")
             axs[1].yaxis.tick_right()
@@ -3118,7 +3152,7 @@ class Interface():
             plt.close()
             fig, ax = plt.subplots(figsize=(16, 6))
             ax.tick_params(direction='in', labelsize=15, width=2)
-            ax.set_xlabel("energy")
+            ax.set_xlabel("Energy")
             ax.set_ylabel('Transmittance')
             ax.set_xlim(0, 1000)
             ax.set_title('membrane Scattering Factor')
@@ -3216,7 +3250,7 @@ class Interface():
 
                     # Plot
                     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
-                    axs[0].set_xlabel("energy")
+                    axs[0].set_xlabel("Energy")
                     axs[0].set_ylabel('NEXAFS')
                     axs[0].set_title('Raw Data')
                     axs[0].tick_params(direction='in', labelsize=15, width=2)
@@ -3230,7 +3264,7 @@ class Interface():
                     axs[0].legend()
 
                     axs[1].set_title('Region Zoom')
-                    axs[1].set_xlabel("energy")
+                    axs[1].set_xlabel("Energy")
                     axs[1].set_ylabel('NEXAFS')
                     axs[1].tick_params(direction='in', labelsize=15, width=2)
 
@@ -3347,14 +3381,14 @@ class Interface():
             print("Window cleared.")
             clear_output(True)
 
-    def errors_extraction(self, spec, df, xcol, ycol, nbpts, deg, direction, compute_bool):
+    def errors_extraction(self, spec, df, xcol, ycol, nbpts, deg, direction, compute):
 
         def poly(x, y, deg):
             coef = np.polyfit(x, y, deg)
             # Create the polynomial function from the coefficients
             return np.poly1d(coef)(x)
 
-        if compute_bool:
+        if compute:
             try:
                 clear_output(True)
                 self.used_datasets, self.used_df_type = spec, df
@@ -3415,13 +3449,13 @@ class Interface():
                 plt.close()
 
                 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
-                axs[0].set_xlabel("energy")
+                axs[0].set_xlabel("Energy")
                 axs[0].set_ylabel('NEXAFS')
                 axs[0].set_title('Data')
                 axs[0].plot(x, y, label="Data")
                 axs[0].legend()
 
-                axs[1].set_xlabel("energy")
+                axs[1].set_xlabel("Energy")
                 axs[1].set_ylabel('NEXAFS')
                 axs[1].set_title('Root Mean Square')
                 axs[1].plot(x, self.errors["RMS"], label="RMS")
@@ -3465,15 +3499,15 @@ class Interface():
                             used_df = getattr(C, df_type)
                             try:
                                 v1Data.append(
-                                    int(np.where(used_df["energy"].values == self.energy_widgets[0].value[0])[0]))
+                                    int(np.where(used_df["Energy"].values == self.energy_widgets[0].value[0])[0]))
                             except TypeError:
                                 v1Data.append(0)
 
                             try:
                                 v2Data.append(
-                                    int(np.where(used_df["energy"].values == self.energy_widgets[0].value[1])[0]))
+                                    int(np.where(used_df["Energy"].values == self.energy_widgets[0].value[1])[0]))
                             except TypeError:
-                                v2Data.append(len(used_df["energy"].values)-1)
+                                v2Data.append(len(used_df["Energy"].values)-1)
 
                         # Take data spectrum on interval
                         self.spec_df = [getattr(D, df_type).copy(
@@ -3500,15 +3534,15 @@ class Interface():
                         for used_df in self.ref_df:
                             try:
                                 v1Ref.append(
-                                    int(np.where(used_df["energy"].values == self.energy_widgets[0].value[0])[0]))
+                                    int(np.where(used_df["Energy"].values == self.energy_widgets[0].value[0])[0]))
                             except TypeError:
                                 v1Ref.append(0)
 
                             try:
                                 v2Ref.append(
-                                    int(np.where(used_df["energy"].values == self.energy_widgets[0].value[1])[0]))
+                                    int(np.where(used_df["Energy"].values == self.energy_widgets[0].value[1])[0]))
                             except TypeError:
-                                v2Ref.append(len(used_df["energy"].values)-1)
+                                v2Ref.append(len(used_df["Energy"].values)-1)
 
                         # Take ref on interval
                         self.ref_df = [df[v1:v2] for df, v1,
@@ -3724,7 +3758,7 @@ class Interface():
                 if data_format == ".npy":
                     simulated_data_frame = pd.DataFrame(
                         np.load(f"{self.folders[4]}/{data_name}.npy"))
-                    simulated_data_frame.columns = ["energy", "\u03BC"]
+                    simulated_data_frame.columns = ["Energy", "\u03BC"]
 
                 if data_format != ".npy":
                     simulated_data_frame = pd.read_csv(
@@ -3734,7 +3768,7 @@ class Interface():
 
                 # Adjust if needed
                 display(simulated_data_frame)
-                simulated_data_frame["energy"] += energy_shift
+                simulated_data_frame["Energy"] += energy_shift
                 simulated_data_frame["\u03BC"] = simulated_data_frame["\u03BC"] * scale_factor
 
                 self.temp_df = simulated_data_frame
@@ -3742,9 +3776,9 @@ class Interface():
                 display(self.temp_df)
 
                 fig, ax = plt.subplots(figsize=(16, 6))
-                ax.set_xlabel("energy")
+                ax.set_xlabel("Energy")
                 ax.set_ylabel('NEXAFS')
-                ax.plot(self.temp_df["energy"], self.temp_df["\u03BC"])
+                ax.plot(self.temp_df["Energy"], self.temp_df["\u03BC"])
 
                 Buttonimport_data = Button(
                     description="Import data",
@@ -3755,8 +3789,8 @@ class Interface():
                 def Actionimport_data(selfbutton):
                     try:
                         # Interpolation
-                        self.temp_df = self.temp_df.drop_duplicates("energy")
-                        old_x = self.temp_df["energy"]
+                        self.temp_df = self.temp_df.drop_duplicates("Energy")
+                        old_x = self.temp_df["Energy"]
                         old_y = self.temp_df["\u03BC"]
                         tck = interpolate.splrep(old_x, old_y, s=0)
 
@@ -3766,7 +3800,7 @@ class Interface():
                         y_new = interpolate.splev(new_energy_column_sim, tck)
 
                         interpolated_sim_df = pd.DataFrame({
-                            "energy": new_energy_column_sim,
+                            "Energy": new_energy_column_sim,
                             "\u03BC": y_new})
 
                         # Include in gui
@@ -3905,7 +3939,7 @@ class Interface():
             for j, C in enumerate(self.used_class_list):
                 used_df = getattr(C, df)
                 mu.append(used_df[y].values)
-                energy.append(used_df["energy"].values)
+                energy.append(used_df["Energy"].values)
 
                 try:
                     v1.append(int(np.where(energy[j] == interval[0])[0]))
@@ -3928,7 +3962,7 @@ class Interface():
             plt.close()
 
             fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
-            axs[0].set_xlabel("energy")
+            axs[0].set_xlabel("Energy")
             axs[0].set_ylabel('NEXAFS')
             axs[0].set_title('Raw Data')
             axs[0].tick_params(direction='in', labelsize=15, width=2)
@@ -3951,7 +3985,7 @@ class Interface():
             difference = mu[number][v1[number]:v2[number]] - baseline
 
             axs[1].set_title('Background subtracted')
-            axs[1].set_xlabel("energy")
+            axs[1].set_xlabel("Energy")
             axs[1].set_ylabel('NEXAFS')
             axs[1].yaxis.set_label_position("right")
             axs[1].yaxis.tick_right()
@@ -3975,7 +4009,7 @@ class Interface():
                     np.trapz(
                         difference, x=energy[number][v1[number]:v2[number]])
                 temp_df = pd.DataFrame()
-                temp_df["energy"] = energy[number][v1[number]:v2[number]]
+                temp_df["Energy"] = energy[number][v1[number]:v2[number]]
                 temp_df["\u03BC"] = mu[number][v1[number]:v2[number]]
                 temp_df["background_corrected"] = difference
                 temp_df["\u03BC_variance"] = [
@@ -3995,12 +4029,12 @@ class Interface():
 
                 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                 ax[0].set_title('Background subtracted')
-                ax[0].set_xlabel("energy")
+                ax[0].set_xlabel("Energy")
                 ax[0].set_ylabel('NEXAFS')
                 ax[0].tick_params(direction='in', labelsize=15, width=2)
 
                 ax[1].set_title('Background subtracted shifted')
-                ax[1].set_xlabel("energy")
+                ax[1].set_xlabel("Energy")
                 ax[1].set_ylabel('NEXAFS')
                 ax[1].yaxis.tick_right()
                 ax[1].tick_params(direction='in', labelsize=15, width=2)
@@ -4039,7 +4073,7 @@ class Interface():
                     for j, C in enumerate(self.used_class_list):
                         temp_df = pd.DataFrame()
                         temp_df = getattr(C, "reduced_df")
-                        temp_df["energy"] = energy[j][v1[j]:v2[j]]
+                        temp_df["Energy"] = energy[j][v1[j]:v2[j]]
                         temp_df["\u03BC"] = mu[j][v1[j]:v2[j]]
                         temp_df["background_corrected"] = ITB[j]
                         temp_df["\u03BC_variance"] = [
@@ -4064,12 +4098,12 @@ class Interface():
 
                     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                     ax[0].set_title('Background subtracted normalized')
-                    ax[0].set_xlabel("energy")
+                    ax[0].set_xlabel("Energy")
                     ax[0].set_ylabel('NEXAFS')
                     ax[0].tick_params(direction='in', labelsize=15, width=2)
                     ax[1].set_title(
                         'Background subtracted normalized & shifted')
-                    ax[1].set_xlabel("energy")
+                    ax[1].set_xlabel("Energy")
                     ax[1].set_ylabel('NEXAFS')
                     ax[1].yaxis.set_label_position("right")
                     ax[1].yaxis.tick_right()
@@ -4093,7 +4127,7 @@ class Interface():
                         # Save normalized data
                         for j, C in enumerate(self.used_class_list):
                             temp_df = pd.DataFrame()
-                            temp_df["energy"] = energy[j][v1[j]:v2[j]]
+                            temp_df["Energy"] = energy[j][v1[j]:v2[j]]
                             temp_df["\u03BC"] = mu[j][v1[j]:v2[j]]
                             temp_df["background_corrected"] = ITB[j]
                             temp_df["\u03BC_variance"] = [
@@ -4135,7 +4169,7 @@ class Interface():
             for j, C in enumerate(self.used_class_list):
                 used_df = getattr(C, df)
                 mu.append(used_df[y].values)
-                energy.append(used_df["energy"].values)
+                energy.append(used_df["Energy"].values)
 
                 try:
                     v1.append(int(np.where(energy[j] == interval[0])[0]))
@@ -4150,7 +4184,7 @@ class Interface():
             plt.close()
 
             fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
-            axs[0].set_xlabel("energy")
+            axs[0].set_xlabel("Energy")
             axs[0].set_ylabel('NEXAFS')
             axs[0].set_title('Raw Data')
             axs[0].tick_params(direction='in', labelsize=15, width=2)
@@ -4173,7 +4207,7 @@ class Interface():
             difference = mu[number][v1[number]:v2[number]] - baseline
 
             axs[1].set_title('Background subtracted')
-            axs[1].set_xlabel("energy")
+            axs[1].set_xlabel("Energy")
             axs[1].set_ylabel('NEXAFS')
             axs[1].yaxis.set_label_position("right")
             axs[1].yaxis.tick_right()
@@ -4205,7 +4239,7 @@ class Interface():
                     np.trapz(
                         difference, x=energy[number][v1[number]:v2[number]])
                 temp_df = pd.DataFrame()
-                temp_df["energy"] = energy[number][v1[number]:v2[number]]
+                temp_df["Energy"] = energy[number][v1[number]:v2[number]]
                 temp_df["\u03BC"] = mu[number][v1[number]:v2[number]]
                 temp_df["background_corrected"] = difference
                 temp_df["\u03BC_variance"] = [
@@ -4225,14 +4259,14 @@ class Interface():
 
                 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                 ax[0].set_title('Background subtracted')
-                ax[0].set_xlabel("energy")
+                ax[0].set_xlabel("Energy")
                 ax[0].set_ylabel('NEXAFS')
                 ax[0].tick_params(direction='in', labelsize=15, width=2)
                 ax[0].set_xlim(energy[number][v1[number]],
                                energy[number][v2[number]])
 
                 ax[1].set_title('Background subtracted shifted')
-                ax[1].set_xlabel("energy")
+                ax[1].set_xlabel("Energy")
                 ax[1].set_ylabel('NEXAFS')
                 ax[1].yaxis.tick_right()
                 ax[1].tick_params(direction='in', labelsize=15, width=2)
@@ -4273,7 +4307,7 @@ class Interface():
                     # Save intensity without background
                     for j, C in enumerate(self.used_class_list):
                         temp_df = pd.DataFrame()
-                        temp_df["energy"] = energy[j][v1[j]:v2[j]]
+                        temp_df["Energy"] = energy[j][v1[j]:v2[j]]
                         temp_df["\u03BC"] = mu[j][v1[j]:v2[j]]
                         temp_df["background_corrected"] = ITB[j]
                         temp_df["\u03BC_variance"] = [
@@ -4298,14 +4332,14 @@ class Interface():
 
                     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                     ax[0].set_title('Background subtracted normalized')
-                    ax[0].set_xlabel("energy")
+                    ax[0].set_xlabel("Energy")
                     ax[0].set_ylabel('NEXAFS')
                     ax[0].tick_params(direction='in', labelsize=15, width=2)
                     ax[0].set_xlim(energy[number][v1[number]],
                                    energy[number][v2[number]])
                     ax[1].set_title(
                         'Background subtracted normalized & shifted')
-                    ax[1].set_xlabel("energy")
+                    ax[1].set_xlabel("Energy")
                     ax[1].set_ylabel('NEXAFS')
                     ax[1].yaxis.set_label_position("right")
                     ax[1].yaxis.tick_right()
@@ -4331,7 +4365,7 @@ class Interface():
                         # Save normalized data
                         for j, C in enumerate(self.used_class_list):
                             temp_df = pd.DataFrame()
-                            temp_df["energy"] = energy[j][v1[j]:v2[j]]
+                            temp_df["Energy"] = energy[j][v1[j]:v2[j]]
                             temp_df["\u03BC"] = mu[j][v1[j]:v2[j]]
                             temp_df["background_corrected"] = ITB[j]
                             temp_df["\u03BC_variance"] = [
@@ -4364,7 +4398,7 @@ class Interface():
             for j, C in enumerate(self.used_class_list):
                 used_df = getattr(C, df)
                 mu.append(used_df[y].values)
-                energy.append(used_df["energy"].values)
+                energy.append(used_df["Energy"].values)
 
                 try:
                     v1.append(int(np.where(energy[j] == interval[0])[0]))
@@ -4386,7 +4420,7 @@ class Interface():
                 positions.sort()
 
                 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
-                axs[0].set_xlabel("energy")
+                axs[0].set_xlabel("Energy")
                 axs[0].set_ylabel('NEXAFS')
                 axs[0].set_title('Raw Data')
                 axs[0].tick_params(direction='in', labelsize=15, width=2)
@@ -4419,7 +4453,7 @@ class Interface():
 
                 axs[1].plot(energy[number][v1[number]:v2[number]], difference)
                 axs[1].set_title('Bgk subtracted')
-                axs[1].set_xlabel("energy")
+                axs[1].set_xlabel("Energy")
                 axs[1].set_ylabel('NEXAFS')
                 axs[1].yaxis.set_label_position("right")
                 axs[1].tick_params(direction='in', labelsize=15, width=2)
@@ -4443,7 +4477,7 @@ class Interface():
                         np.trapz(
                             difference, x=energy[number][v1[number]:v2[number]])
                     temp_df = pd.DataFrame()
-                    temp_df["energy"] = energy[number][v1[number]:v2[number]]
+                    temp_df["Energy"] = energy[number][v1[number]:v2[number]]
                     temp_df["\u03BC"] = mu[number][v1[number]:v2[number]]
                     temp_df["background_corrected"] = difference
                     temp_df["\u03BC_variance"] = [
@@ -4472,14 +4506,14 @@ class Interface():
 
                     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                     ax[0].set_title('Background subtracted')
-                    ax[0].set_xlabel("energy")
+                    ax[0].set_xlabel("Energy")
                     ax[0].set_ylabel('NEXAFS')
                     ax[0].tick_params(direction='in', labelsize=15, width=2)
                     ax[0].set_xlim(energy[number][v1[number]],
                                    energy[number][v2[number]])
 
                     ax[1].set_title('Background subtracted shifted')
-                    ax[1].set_xlabel("energy")
+                    ax[1].set_xlabel("Energy")
                     ax[1].set_ylabel('NEXAFS')
                     ax[1].yaxis.tick_right()
                     ax[1].tick_params(direction='in', labelsize=15, width=2)
@@ -4508,7 +4542,7 @@ class Interface():
                         # Save intensity without background
                         for j, C in enumerate(self.used_class_list):
                             temp_df = pd.DataFrame()
-                            temp_df["energy"] = energy[j][v1[j]:v2[j]]
+                            temp_df["Energy"] = energy[j][v1[j]:v2[j]]
                             temp_df["\u03BC"] = mu[j][v1[j]:v2[j]]
                             temp_df["background_corrected"] = ITB[j]
                             temp_df["\u03BC_variance"] = [
@@ -4533,7 +4567,7 @@ class Interface():
                         fig, ax = plt.subplots(
                             nrows=1, ncols=2, figsize=(16, 6))
                         ax[0].set_title('Background subtracted normalized')
-                        ax[0].set_xlabel("energy")
+                        ax[0].set_xlabel("Energy")
                         ax[0].set_ylabel('NEXAFS')
                         ax[0].tick_params(
                             direction='in', labelsize=15, width=2)
@@ -4541,7 +4575,7 @@ class Interface():
                                        energy[number][v2[number]])
                         ax[1].set_title(
                             'Background subtracted normalized & shifted')
-                        ax[1].set_xlabel("energy")
+                        ax[1].set_xlabel("Energy")
                         ax[1].set_ylabel('NEXAFS')
                         ax[1].yaxis.set_label_position("right")
                         ax[1].yaxis.tick_right()
@@ -4567,7 +4601,7 @@ class Interface():
                             # Save normalized data
                             for j, C in enumerate(self.used_class_list):
                                 temp_df = pd.DataFrame()
-                                temp_df["energy"] = energy[j][v1[j]:v2[j]]
+                                temp_df["Energy"] = energy[j][v1[j]:v2[j]]
                                 temp_df["\u03BC"] = mu[j][v1[j]:v2[j]]
                                 temp_df["background_corrected"] = ITB[j]
                                 temp_df["\u03BC_variance"] = [
@@ -4618,7 +4652,7 @@ class Interface():
             for j, C in enumerate(self.used_class_list):
                 used_df = getattr(C, df)
                 mu.append(used_df[y].values)
-                energy.append(used_df["energy"].values)
+                energy.append(used_df["Energy"].values)
 
                 try:
                     v1.append(int(np.where(energy[j] == interval[0])[0]))
@@ -4678,7 +4712,7 @@ class Interface():
             plt.close()
 
             fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
-            axs[0].set_xlabel("energy")
+            axs[0].set_xlabel("Energy")
             axs[0].set_ylabel('NEXAFS')
             axs[0].set_title('Raw Data')
 
@@ -4697,7 +4731,7 @@ class Interface():
             axs[0].legend()
 
             axs[1].set_title('Background subtracted & normalized curve')
-            axs[1].set_xlabel("energy")
+            axs[1].set_xlabel("Energy")
             axs[1].set_ylabel('NEXAFS')
             axs[1].yaxis.set_label_position("right")
             axs[1].yaxis.tick_right()
@@ -4710,7 +4744,7 @@ class Interface():
                 # Save single Dataset without background in Class
                 C = self.used_datasets
                 temp_df = pd.DataFrame()
-                temp_df["energy"] = energy[number]
+                temp_df["Energy"] = energy[number]
                 temp_df["\u03BC"] = mu[number]
                 temp_df["background_corrected"] = difference
                 temp_df["\u03BC_variance"] = [
@@ -4730,11 +4764,11 @@ class Interface():
 
                 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                 ax[0].set_title('Background subtracted')
-                ax[0].set_xlabel("energy")
+                ax[0].set_xlabel("Energy")
                 ax[0].set_ylabel('NEXAFS')
 
                 ax[1].set_title('Background subtracted shifted')
-                ax[1].set_xlabel("energy")
+                ax[1].set_xlabel("Energy")
                 ax[1].set_ylabel('NEXAFS')
                 ax[1].yaxis.tick_right()
                 ax[1].yaxis.set_label_position("right")
@@ -4798,7 +4832,7 @@ class Interface():
                     for j, C in enumerate(self.used_class_list):
                         temp_df = pd.DataFrame()
                         temp_df = getattr(C, "reduced_df")
-                        temp_df["energy"] = energy[j][v1[j]:v2[j]]
+                        temp_df["Energy"] = energy[j][v1[j]:v2[j]]
                         temp_df["\u03BC"] = mu[j][v1[j]:v2[j]]
                         temp_df["background_corrected"] = ITB[j]
                         temp_df["\u03BC_variance"] = [
@@ -4820,12 +4854,12 @@ class Interface():
 
                     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                     ax[0].set_title('Background subtracted normalized')
-                    ax[0].set_xlabel("energy")
+                    ax[0].set_xlabel("Energy")
                     ax[0].set_ylabel('NEXAFS')
                     ax[0].tick_params(direction='in', labelsize=15, width=2)
                     ax[1].set_title(
                         'Background subtracted normalized & shifted')
-                    ax[1].set_xlabel("energy")
+                    ax[1].set_xlabel("Energy")
                     ax[1].set_ylabel('NEXAFS')
                     ax[1].yaxis.set_label_position("right")
                     ax[1].yaxis.tick_right()
@@ -4849,7 +4883,7 @@ class Interface():
                         # Save normalized data
                         for j, C in enumerate(self.used_class_list):
                             temp_df = pd.DataFrame()
-                            temp_df["energy"] = energy[j]
+                            temp_df["Energy"] = energy[j]
                             temp_df["\u03BC"] = mu[j]
                             temp_df["background_corrected"] = ITB[j]
                             temp_df["\u03BC_variance"] = [
@@ -4896,7 +4930,7 @@ class Interface():
             for j, C in enumerate(self.used_class_list):
                 used_df = getattr(C, df)
                 mu.append(used_df[y])
-                energy.append(used_df["energy"])
+                energy.append(used_df["Energy"])
                 try:
                     v1.append(int(np.where(energy[j] == interval[0])[0]))
                 except TypeError:
@@ -4919,7 +4953,7 @@ class Interface():
                 energymaximasl = dE[number][maxima[number]]
 
                 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
-                axs[0].set_xlabel("energy")
+                axs[0].set_xlabel("Energy")
                 axs[0].set_ylabel('NEXAFS')
                 axs[0].set_title('1st Derivative')
                 axs[0].tick_params(direction='in', labelsize=15, width=2)
@@ -4951,7 +4985,7 @@ class Interface():
                                color='green', linestyle='--')
                 axs[1].set_title("F")
 
-                axs[1].set_xlabel("energy")
+                axs[1].set_xlabel("Energy")
                 axs[1].set_ylabel('NEXAFS')
                 axs[1].yaxis.set_label_position("right")
 
@@ -5133,7 +5167,7 @@ class Interface():
             for j, C in enumerate(self.used_class_list):
                 used_df = getattr(C, df)
                 mu.append(used_df[y].values)
-                energy.append(used_df["energy"].values)
+                energy.append(used_df["Energy"].values)
                 E0.append(getattr(C, "E0"))
 
                 # First and second zoom
@@ -5229,7 +5263,7 @@ class Interface():
 
             # Plot current work
             fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
-            axs[0].set_xlabel("energy")
+            axs[0].set_xlabel("Energy")
             axs[0].set_ylabel('NEXAFS')
             axs[0].set_title('Raw Data')
             axs[0].tick_params(direction='in', labelsize=15, width=2)
@@ -5270,7 +5304,7 @@ class Interface():
             axs[1].axhline(1, color='red', linestyle='--',
                            label="Normalization to 1.")
             axs[1].set_xlim(np.min(energy[number]), np.max(energy[number]))
-            axs[1].set_xlabel("energy")
+            axs[1].set_xlabel("Energy")
             axs[1].set_ylabel('NEXAFS')
             axs[1].yaxis.set_label_position("right")
             axs[1].tick_params(direction='in', labelsize=15, width=2)
@@ -5285,7 +5319,7 @@ class Interface():
             def ActionSaveDataset(selfbutton):
                 # Save single Dataset without background in Class
                 temp_df = pd.DataFrame()
-                temp_df["energy"] = energy[number]
+                temp_df["Energy"] = energy[number]
                 temp_df["\u03BC"] = mu[number]
                 temp_df["background_corrected"] = ITB
                 temp_df["\u03BC_variance"] = [1/d if d > 0 else 0 for d in ITB]
@@ -5298,7 +5332,7 @@ class Interface():
 
                 # Need to plot again
                 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
-                axs[0].set_xlabel("energy")
+                axs[0].set_xlabel("Energy")
                 axs[0].set_ylabel('NEXAFS')
                 axs[0].set_title('Raw Data')
                 axs[0].tick_params(direction='in', labelsize=15, width=2)
@@ -5340,7 +5374,7 @@ class Interface():
                 axs[1].axhline(1, color='red', linestyle='--',
                                label="Normalization to 1.")
                 axs[1].set_xlim(np.min(energy[number]), np.max(energy[number]))
-                axs[1].set_xlabel("energy")
+                axs[1].set_xlabel("Energy")
                 axs[1].set_ylabel('NEXAFS')
                 axs[1].yaxis.set_label_position("right")
                 axs[1].tick_params(direction='in', labelsize=15, width=2)
@@ -5375,7 +5409,7 @@ class Interface():
             for j, C in enumerate(self.used_class_list):
                 used_df = getattr(C, df)
                 mu.append(used_df[y].values)
-                energy.append(used_df["energy"].values)
+                energy.append(used_df["Energy"].values)
 
                 try:
                     v1.append(int(np.where(energy[j] == interval[0])[0]))
@@ -5390,7 +5424,7 @@ class Interface():
             plt.close()
 
             fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
-            axs[0].set_xlabel("energy")
+            axs[0].set_xlabel("Energy")
             axs[0].set_ylabel('NEXAFS')
             axs[0].set_title('Data')
             axs[0].tick_params(direction='in', labelsize=15, width=2)
@@ -5405,7 +5439,7 @@ class Interface():
             axs[0].legend()
 
             axs[1].set_title('normalized data')
-            axs[1].set_xlabel("energy")
+            axs[1].set_xlabel("Energy")
             axs[1].set_ylabel('NEXAFS')
             axs[1].yaxis.set_label_position("right")
             axs[1].yaxis.tick_right()
@@ -5432,12 +5466,12 @@ class Interface():
                 plt.close()
 
                 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
-                axs[0].set_xlabel("energy")
+                axs[0].set_xlabel("Energy")
                 axs[0].set_ylabel('NEXAFS')
                 axs[0].set_title('Data')
 
                 axs[1].set_title('normalized data')
-                axs[1].set_xlabel("energy")
+                axs[1].set_xlabel("Energy")
                 axs[1].set_ylabel('NEXAFS')
 
                 normalized_data = []
@@ -5463,7 +5497,7 @@ class Interface():
                     # Save normalized data
                     for j, C in enumerate(self.used_class_list):
                         temp_df = pd.DataFrame()
-                        temp_df["energy"] = energy[j][v1[j]:v2[j]]
+                        temp_df["Energy"] = energy[j][v1[j]:v2[j]]
                         temp_df["\u03BC"] = mu[j][v1[j]:v2[j]]
                         temp_df["\u03BC_variance"] = [1/d if d >
                                                       0 else 0 for d in mu[j][v1[j]:v2[j]]]
@@ -5486,19 +5520,16 @@ class Interface():
             print("The selected energy range is wrong.")
 
     # Fitting
-    def define_fitting_df(self, spec, printed_df, show_bool):
-        """Displays the pandas.DataFrame associated to each Dataset, there are currently 4 different possibilities:
-            _ df : Original data
-            _ shifted_df : Is one shifts the energy 
-            _ reduced_df : If one applies some background reduction or normalization method 
-            _ reduced_df_splines : If one applied the specific Splines background reduction and normalization method.
-        Each data frame is automatically saved as a .csv file after creation."""
+    def define_fitting_df(self, spec, printed_df, show):
+        """
 
-        if not show_bool:
+        """
+
+        if not show:
             print("Window cleared")
             clear_output(True)
 
-        elif show_bool:
+        elif show:
             try:
                 self.used_datasets = spec
                 self.used_df_type = printed_df
@@ -5509,8 +5540,23 @@ class Interface():
             except (AttributeError, KeyError):
                 print(f"Wrong Dataset and column combination !")
 
-    def define_model(self, xcol, ycol, interval, peak_number, peak_type, background_type, pol_degree, step_type, method, w, fix_model):
-        """We built a model using the lmfit package, composed of a background, a step and a certain number of polynomials
+    def define_model(
+        self,
+        xcol,
+        ycol,
+        interval,
+        peak_number,
+        peak_type,
+        background_type,
+        pol_degree,
+        step_type,
+        method,
+        w,
+        fix_model
+    ):
+        """
+        We built a model using the lmfit package, composed of a background,
+        a step and a certain number of polynomials
         """
         # Retrieve the data
         self.used_df_fit = getattr(self.used_datasets, self.used_df_type)
@@ -5976,11 +6022,23 @@ class Interface():
 
     # Plotting interactive function
 
-    def plot_dataset(self, spec_number, plot_df, x, y, x_axis, y_axis, title, check_plot):
-        """Allows one to plot one Dataset or all spectra together and to then save the figure
+    def plot_dataset(
+        self,
+        spec_number,
+        plot_df,
+        x,
+        y,
+        x_axis,
+        y_axis,
+        title,
+        check_plot
+    ):
+        """
+        Allows one to plot one Dataset or all spectra together
+        and to then save the figure
         """
         if check_plot == "Zero":
-            print("No plotting atm.")
+            print("No plotting.")
 
         elif check_plot == "Plot" and len(spec_number) == 1:
             @interact(
@@ -6201,8 +6259,8 @@ class Interface():
                             np.where(self.new_energy_column == interval[1])[0])
 
                         data = self.merged_values.copy()[v1:v2]
-                        data.index = data["energy"]
-                        del data["energy"]
+                        data.index = data["Energy"]
+                        del data["Energy"]
 
                         display(data)
 
@@ -6242,7 +6300,7 @@ class Interface():
 
                 _list_3D = interactive(three_d_plot,
                                        xname=widgets.Text(
-                                           value="energy",
+                                           value="Energy",
                                            placeholder="x_axis",
                                            description='Name of x axis:',
                                            disabled=False,
@@ -6385,7 +6443,8 @@ class Interface():
                         display(this_logbook)
                     except NameError:
                         try:
-                            # so that each consequent mask is still here, here we apply the first mask and create logbook
+                            # so that each consequent mask is still here,
+                            # here we apply the first mask and create logbook
                             this_logbook = logbook
                             mask = this_logbook[column] == value
                             this_logbook = this_logbook[mask]
