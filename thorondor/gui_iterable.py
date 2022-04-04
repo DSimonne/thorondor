@@ -1,25 +1,19 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
 import numpy as np
 import pandas as pd
+import tables as tb
+from datetime import dateti
 import glob
 import os
+import pickle
 
 import ipywidgets as widgets
 from ipywidgets import interact, Button, Layout, interactive, fixed
 from IPython.display import display, Markdown, Latex, clear_output
 
-from datetime import datetime
-import pickle
-
-import tables as tb
-
 
 class Dataset():
-    """A new instance of the Dataset class will be initialized for each Dataset
+    """
+    A new instance of the Dataset class will be initialized for each Dataset
     saved in the data folder. This object is then modified by the class gui
     For each Dataset, all the different dataframes that will be created as well
     as specific information e.g. E0 the edge jump can be find as attributes
@@ -87,34 +81,46 @@ class Dataset():
         self.pickle()
 
     def pickle(self):
-        """Use the pickle module to save the classes
-        """
+        """Use the pickle module to save the classes"""
         try:
-            with open(f"{self.saving_directory}/"+self.name.split("~")[0]+".pickle", 'wb') as f:
+            with open(
+                f"{self.saving_directory}/"+self.name.split("~")[0]+".pickle",
+                    'wb') as f:
                 pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
         except PermissionError:
-            print("""Permission denied, You cannot save this file because you are not its creator. The changes are updated for this session and you can still plot figures but once you exit the program, all changes will be erased.""")
-            pass
+            print("""
+                Permission denied, You cannot save this file because you \
+                are not its creator. The changes are updated for this session \
+                and you can still plot figures but once you exit the program, \
+                all changes will be erased.
+                """)
 
     @staticmethod
-    def unpickle(prompt):
-        """Use the pickle module to load the classes
+    def unpickle(file_path):
+        """
+        Use the pickle module to load the classes
+
+        :param file_path: absolute path to pickle file
         """
 
-        with open(f"{prompt}", 'rb') as f:
+        with open(f"{file_path}", 'rb') as f:
             return pickle.load(f)
 
-    def metadata(self, author=None, timestamp=None, instrument=None, experiment=None):
-        """Add some metadata via this method
+    def metadata(self, **kwargs):
         """
-        self.author = author
-        self.instrument = instrument
-        self.experiment = experiment
-        self.timestamp = timestamp
+        Add some metadata via this method
+
+        :param kwargs: kwargs to store in file
+        """
+
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
         self.pickle()
 
     def comment(self, prompt, eraseall=False):
-        """Precise if you want to erase the previous comments,
+        """
+        Precise if you want to erase the previous comments,
         type your comment as a string
         """
         try:
@@ -128,25 +134,27 @@ class Dataset():
             raise e
 
     def __repr__(self):
-        if self.author == None:
-            return "{}, created on the {}.\n".format(self.name, self.timestamp)
-        else:
-            return "{}, created by {} on the {}, recorded on the instrument {}, experiment: {}.\n".format(
-                self.name, self.author, self.timestamp, self.instrument, self.experiment)
+        try:
+            if self.author == None:
+                return f"{self.name}, created on the {self.timestamp}.\n"
+            else:
+                return "{}, created by {} on the {}, recorded on the instrument {}, experiment: {}.\n".format(
+                    self.name, self.author, self.timestamp, self.instrument, self.experiment)
+        except:
+            return "Thorondor Dataset."
 
     def __str__(self):
         return repr(self)
 
     def to_hdf5(self, filename):
         """
-        This is a simple way to save the data as hdf5 file, each group must
-        subsequently be opened via the pandas.read_hdf() method.
+        Save the data as hdf5 file, each group must be opened via the
+        pandas.read_hdf() method.
         E.g.: pd.read_hdf("DatasetXXX.h5", "Dataframes/fit_df")
         The metadata is saved under the metadata attribute, see with
         pd.read_hdf("DatasetXXX.h5", "metadata")
         """
         try:
-
             StringDict = {keys: [
                 value] for keys, value in self.__dict__.items() if isinstance(value, str)}
             DfDict = {keys: value for keys, value in self.__dict__.items(
@@ -168,14 +176,17 @@ class Dataset():
             raise e
 
     def to_nxs(self):
-        """hdf5 alias. Since thorondor only proceeds to the analysis of the
+        """
+        hdf5 alias. Since thorondor only proceeds to the analysis of the
         data and does not directly handle the output of instruments, the NeXuS
         data format can be used to save the Dataset class, but the architecture
         follows the processed data file, metadata follows only if given by
         the user.
+
         Each dataframe used in thorondor is saved in
         root.NXentry.NXdata.<dataframe> as a table, the description of the table
         gives the column names.
+
         An error might raise due to fact that we use unicode character to write
         mu, this is not important.
         Uses pytables.

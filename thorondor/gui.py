@@ -1,8 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -55,14 +50,14 @@ class Interface():
 
     def __init__(self, class_list=False):
         """
-        All the widgets for the gui are defined here. Two different
-        initialization procedures are possible depending on whether or not a
-        class_list is given in entry.
+        All the widgets for the GUI are defined here.
+        Two different initialization procedures are possible depending on
+        whether or not a class_list is given in entry.
         """
 
         self.work_dir = "./"
         self.path_elements = inspect.getfile(np).split(
-            "__")[0].split("numpy")[0]+"thorondor/Elements/"
+            "__")[0].split("numpy")[0] + "thorondor/Elements/"
 
         if class_list:
 
@@ -72,17 +67,22 @@ class Interface():
 
             path_original_data = self.work_dir + str(self.data_folder)
             path_classes = path_original_data + "/Classes"
-            path_data_as_csv = path_original_data + "/Export_data"
+            path_data_as_csv = path_original_data + "/ExportData"
             path_figures = path_original_data + "/Figures"
-            path_import_data = path_original_data + "/Import_data"
+            path_import_data = path_original_data + "/ImportData"
 
             self.folders = [path_original_data, path_classes,
                             path_data_as_csv, path_figures, path_import_data]
 
             path_to_classes = [
-                p.replace("\\", "/") for p in sorted(glob.glob(path_classes+"/*.pickle"))]
+                p.replace("\\", "/") for p in sorted(
+                    glob.glob(path_classes+"/*.pickle")
+                )
+            ]
             self.names = [
-                "Dataset_"+f.split("/")[-1].split(".")[0] for f in path_to_classes]
+                "Dataset_"+f.split("/")[-1].split(".")[0]
+                for f in path_to_classes
+            ]
 
             self.new_energy_column = np.round(
                 self.class_list[0].df["Energy"].values, 2)
@@ -93,7 +93,8 @@ class Interface():
             self.new_energy_column = np.linspace(
                 self.new_energy_column[0]-20,
                 self.new_energy_column[-1]+20,
-                int(((self.new_energy_column[-1]+20) - (self.new_energy_column[0]-20))/self.interpol_step + 1))
+                int(((self.new_energy_column[-1]+20) -
+                    (self.new_energy_column[0]-20))/self.interpol_step + 1))
 
         elif not class_list:
             self.class_list = []
@@ -106,7 +107,7 @@ class Interface():
             self.class_list_init,
             data_folder=widgets.Text(
                 value="data_folder",
-                placeholder='<Yourdata_folder>',
+                placeholder='<yourdatafolder>',
                 description="Data folder:",
                 disabled=False,
                 style={'description_width': 'initial'}),
@@ -119,8 +120,7 @@ class Interface():
                 value=False,
                 description='Create/check subdirectories for the program.',
                 disabled=True,
-                style={
-                    'description_width': 'initial'},
+                style={'description_width': 'initial'},
                 layout=Layout(width="70%")),
             data_type=widgets.Dropdown(
                 options=[
@@ -131,7 +131,11 @@ class Interface():
                 style={'description_width': 'initial'}),
             delimiter_type=widgets.Dropdown(
                 options=[
-                    ("Comma", ","), ("Tabulation", "\t"), ("Semicolon", ";"), ("Space", " ")],
+                    ("Comma", ","),
+                    ("Tabulation", "\t"),
+                    ("Semicolon", ";"),
+                    ("Space", " ")
+                ],
                 value="\t",
                 description='Column delimiter type:',
                 disabled=True,
@@ -200,15 +204,15 @@ class Interface():
                 options=self.class_list,
                 description='Select the Dataset:',
                 disabled=True,
-                style={
-                    'description_width': 'initial'},
+                style={'description_width': 'initial'},
                 layout=Layout(width='60%')),
             printed_df=widgets.Dropdown(
                 options=[
-                    ("Renamed data", "df"), ("Shifted data",
-                                             "shifted_df"), ("Reduced data", "reduced_df"),
-                    ("Reduced by Splines",
-                     "reduced_df_splines"), ("Fitted data", "fit_df")
+                    ("Renamed data", "df"),
+                    ("Shifted data", "shifted_df"),
+                    ("Reduced data", "reduced_df"),
+                    ("Reduced by Splines", "reduced_df_splines"),
+                    ("Fitted data", "fit_df")
                 ],
                 value="df",
                 description='Select the dataframe:',
@@ -222,8 +226,11 @@ class Interface():
         self._list_data.children[2].observe(
             self.show_data_handler, names="value")
 
-        self.tab_data = widgets.VBox([self._list_data.children[0], widgets.HBox(
-            self._list_data.children[1:3]), self._list_data.children[-1]])
+        self.tab_data = widgets.VBox([
+            self._list_data.children[0],
+            widgets.HBox(self._list_data.children[1:3]),
+            self._list_data.children[-1]
+        ])
 
         # Widgets for the tools
         self.tab_tools = interactive(
@@ -273,8 +280,7 @@ class Interface():
                 rows=5,
                 description='Spectra to correct:',
                 disabled=False,
-                style={
-                    'description_width': 'initial'},
+                style={'description_width': 'initial'},
                 layout=Layout(display="flex", flex_flow='column')),
             df=widgets.Dropdown(
                 options=[
@@ -288,7 +294,7 @@ class Interface():
                 disabled=False,
                 style={'description_width': 'initial'}),
             x=widgets.Dropdown(
-                options=[("Energy", "Energy")],
+                options=["Energy"],
                 value="Energy",
                 description='Pick an x-axis',
                 disabled=False,
@@ -328,654 +334,761 @@ class Interface():
             self._list_flip.children[-1]
         ])
 
-        self._list_stable_monitor = interactive(self
-            .stable_monitor_method,
+        self._list_stable_monitor = interactive(
+            self.stable_monitor_method,
             spec_number=widgets.SelectMultiple(
                 options=self.class_list,
                 value=self.class_list[0:1],
                 rows=5,
                 description='Spectra to correct:',
                 disabled=False,
-                style={
-                    'description_width': 'initial'},
+                style={'description_width': 'initial'},
                 layout=Layout(display="flex", flex_flow='column')),
             df=widgets.Dropdown(
-                options=[("Renamed data", "df"), ("Shifted data", "shifted_df"), (
-                    "Reduced data", "reduced_df"), ("Reduced by Splines", "reduced_df_splines")],
+                options=[
+                    ("Renamed data", "df"),
+                    ("Shifted data", "shifted_df"),
+                    ("Reduced data", "reduced_df"),
+                    ("Reduced by Splines", "reduced_df_splines")
+                ],
                 value="df",
                 description='Use the dataframe:',
                 disabled=False,
                 style={'description_width': 'initial'}),
             sample_intensity=widgets.Dropdown(
                 options=[
-                    ("Select a value", "value"), ("Sample intensity", "sample_intensity"), ("\u03BC", "\u03BC")],
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC")
+                ],
                 value="value",
                 description='Select the sample data',
                 disabled=False,
-                style={
-                    'description_width': 'initial'},
+                style={'description_width': 'initial'},
                 layout=Layout(width="50%")),
             reference_intensity=widgets.Dropdown(
-                options=[("Select a value", "value"), ("Mesh", "mesh"), (
-                    "Reference first normalization", "reference_first_norm"), ("Reference shift", "reference_shift")],
+                options=[
+                    ("Select a value", "value"),
+                    ("Mesh", "mesh"),
+                    ("Reference first normalization", "reference_first_norm"),
+                    ("Reference shift", "reference_shift")
+                ],
                 value="value",
                 description='Select the reference.',
                 disabled=False,
-                style={
-                    'description_width': 'initial'},
+                style={'description_width': 'initial'},
                 layout=Layout(width="50%")),
             compute=widgets.Checkbox(
                 value=False,
-                description='Compute the ratio between sample intensity and reference intensity',
+                description='Compute ratio sample int./ref. int.',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(width="80%")),)
+        self.widget_list_stable_monitor = widgets.VBox([
+            self._list_stable_monitor.children[0],
+            self._list_stable_monitor.children[1],
+            widgets.HBox(self._list_stable_monitor.children[2:4]),
+            self._list_stable_monitor.children[-2],
+            self._list_stable_monitor.children[-1]
+        ])
+
+        self._list_relative_shift = interactive(
+            self.relative_energy_shift,
+            spec=widgets.Dropdown(
+                options=self.class_list,
+                description='reference spectra :',
                 disabled=False,
                 style={
                     'description_width': 'initial'},
-                layout=Layout(width="80%")),)
-        self.widget_list_stable_monitor = widgets.VBox([
-            self._list_stable_monitor.children[0], self._list_stable_monitor.children[1], widgets.HBox(
-                self._list_stable_monitor.children[2:4]),
-            self._list_stable_monitor.children[-2], self._list_stable_monitor.children[-1]
-        ])
-
-        self._list_relative_shift = interactive(self.relative_energy_shift,
-                                                spec=widgets.Dropdown(
-                                                    options=self.class_list,
-                                                    description='reference spectra :',
-                                                    disabled=False,
-                                                    style={
-                                                        'description_width': 'initial'},
-                                                    layout=Layout(width='60%')),
-                                                df=widgets.Dropdown(
-                                                    options=[("Renamed data", "df"), ("Shifted data", "shifted_df"), ("Reduced data", "reduced_df"), (
-                                                        "Reduced by Splines", "reduced_df_splines"), ("Fitted data", "fit_df")],
-                                                    value="df",
-                                                    description='Use the dataframe:',
-                                                    disabled=False,
-                                                    style={'description_width': 'initial'}),
-                                                x=widgets.Dropdown(
-                                                    options=[
-                                                        ("Energy", "Energy")],
-                                                    value="Energy",
-                                                    description='Pick an x-axis',
-                                                    disabled=False,
-                                                    style={'description_width': 'initial'}),
-                                                y=widgets.Dropdown(
-                                                    options=[
-                                                        ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                            "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                        ("Reference shift", "reference_shift"), ("First normalized \u03BC",
-                                                                                                 "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                                        ("Membrane corrected", "membrane_corrected"), (
-                                                            "Gas & membrane corrected", "gas_membrane_corrected"),
-                                                        ("Background corrected", "background_corrected"), (
-                                                            "Second normalized \u03BC", "second_normalized_\u03BC"),
-                                                        ("Fit", "fit"), ("Weights", "weights"), (
-                                                            "RMS", "RMS"), ("User error", "user_error")
-                                                    ],
-                                                    value="value",
-                                                    description='Pick an y-axis',
-                                                    disabled=False,
-                                                    style={'description_width': 'initial'}),
-                                                fix_ref=widgets.Checkbox(
-                                                    value=False,
-                                                    description='Fix reference spectra',
-                                                    disabled=False,
-                                                    style={'description_width': 'initial'}))
+                layout=Layout(width='60%')),
+            df=widgets.Dropdown(
+                options=[
+                    ("Renamed data", "df"),
+                    ("Shifted data", "shifted_df"),
+                    ("Reduced data", "reduced_df"),
+                    ("Reduced by Splines", "reduced_df_splines"),
+                    ("Fitted data", "fit_df")
+                ],
+                value="df",
+                description='Use the dataframe:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            x=widgets.Dropdown(
+                options=[
+                    ("Energy", "Energy")],
+                value="Energy",
+                description='Pick an x-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            y=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                    ("Fit", "fit"),
+                    ("RMS", "RMS"),
+                ],
+                value="value",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            fix_ref=widgets.Checkbox(
+                value=False,
+                description='Fix reference spectra',
+                disabled=False,
+                style={'description_width': 'initial'}))
         self.widget_list_relative_shift = widgets.VBox([
-            self._list_relative_shift.children[0], widgets.HBox(
-                self._list_relative_shift.children[1:4]),
-            self._list_relative_shift.children[4], self._list_relative_shift.children[-1]
+            self._list_relative_shift.children[0],
+            widgets.HBox(self._list_relative_shift.children[1:4]),
+            self._list_relative_shift.children[4],
+            self._list_relative_shift.children[-1]
         ])
         self._list_relative_shift.children[4].observe(
             self.relative_shift_bool_handler, names="value")
 
-        self._list_global_shift = interactive(self.global_energy_shift,
-                                              spec_number=widgets.SelectMultiple(
-                                                  options=self.class_list,
-                                                  value=self.class_list[0:1],
-                                                  rows=5,
-                                                  description='Spectra to correct:',
-                                                  disabled=False,
-                                                  style={
-                                                      'description_width': 'initial'},
-                                                  layout=Layout(display="flex", flex_flow='column')),
-                                              df=widgets.Dropdown(
-                                                  options=[("Renamed data", "df"), ("Shifted data", "shifted_df"), ("Reduced data", "reduced_df"), (
-                                                      "Reduced by Splines", "reduced_df_splines"), ("Fitted data", "fit_df")],
-                                                  value="df",
-                                                  description='Use the dataframe:',
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}),
-                                              x=widgets.Dropdown(
-                                                  options=[
-                                                      ("Energy", "Energy")],
-                                                  value="Energy",
-                                                  description='Pick an x-axis',
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}),
-                                              y=widgets.Dropdown(
-                                                  options=[
-                                                      ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                          "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                      ("Reference shift", "reference_shift"), ("First normalized \u03BC",
-                                                                                               "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                                      ("Membrane corrected", "membrane_corrected"), (
-                                                          "Gas & membrane corrected", "gas_membrane_corrected"),
-                                                      ("Background corrected", "background_corrected"), (
-                                                          "Second normalized \u03BC", "second_normalized_\u03BC"),
-                                                      ("Fit", "fit"), ("Weights", "weights"), (
-                                                          "RMS", "RMS"), ("User error", "user_error")
-                                                  ],
-                                                  value="value",
-                                                  description='Pick an y-axis',
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}),
-                                              shift=widgets.FloatText(
-                                                  step=self.interpol_step,
-                                                  value=0,
-                                                  description='Shift (eV):',
-                                                  readout=True,
-                                                  readout_format='.2f',
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}))
-        self.widget_list_global_shift = widgets.VBox([self._list_global_shift.children[0], widgets.HBox(
-            self._list_global_shift.children[1:4]), self._list_global_shift.children[-2], self._list_global_shift.children[-1]])
+        self._list_global_shift = interactive(
+            self.global_energy_shift,
+            spec_number=widgets.SelectMultiple(
+                options=self.class_list,
+                value=self.class_list[0:1],
+                rows=5,
+                description='Spectra to correct:',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(display="flex", flex_flow='column')),
+            df=widgets.Dropdown(
+                options=[
+                    ("Renamed data", "df"),
+                    ("Shifted data", "shifted_df"),
+                    ("Reduced data", "reduced_df"),
+                    ("Reduced by Splines", "reduced_df_splines"),
+                    ("Fitted data", "fit_df")
+                ],
+                value="df",
+                description='Use the dataframe:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            x=widgets.Dropdown(
+                options=["Energy"],
+                value="Energy",
+                description='Pick an x-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            y=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                    ("Fit", "fit"),
+                    ("Weights", "weights"),
+                    ("RMS", "RMS"),
+                    ("User error", "user_error")
+                ],
+                value="value",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            shift=widgets.FloatText(
+                step=self.interpol_step,
+                value=0,
+                description='Shift (eV):',
+                readout=True,
+                readout_format='.2f',
+                disabled=False,
+                style={'description_width': 'initial'}))
+        self.widget_list_global_shift = widgets.VBox([
+            self._list_global_shift.children[0],
+            widgets.HBox(self._list_global_shift.children[1:4]),
+            self._list_global_shift.children[-2],
+            self._list_global_shift.children[-1]
+        ])
 
-        self._list_correction_gas = interactive(self.correction_gas,
-                                                spec_number=widgets.SelectMultiple(
-                                                    options=self.class_list,
-                                                    value=self.class_list[0:1],
-                                                    rows=5,
-                                                    description='Spectra to correct:',
-                                                    disabled=False,
-                                                    style={
-                                                        'description_width': 'initial'},
-                                                    layout=Layout(display="flex", flex_flow='column')),
-                                                df=widgets.Dropdown(
-                                                    options=[("Renamed data", "df"), ("Shifted data", "shifted_df"), ("Reduced data", "reduced_df"), (
-                                                        "Reduced by Splines", "reduced_df_splines"), ("Fitted data", "fit_df")],
-                                                    value="df",
-                                                    description='Use the dataframe:',
-                                                    disabled=False,
-                                                    style={'description_width': 'initial'}),
-                                                x=widgets.Dropdown(
-                                                    options=[
-                                                        ("Energy", "Energy")],
-                                                    value="Energy",
-                                                    description='Pick an x-axis',
-                                                    disabled=False,
-                                                    style={'description_width': 'initial'}),
-                                                y=widgets.Dropdown(
-                                                    options=[
-                                                        ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                            "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                        ("Reference shift", "reference_shift"), ("First normalized \u03BC",
-                                                                                                 "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                                        ("Membrane corrected", "membrane_corrected"), (
-                                                            "Gas & membrane corrected", "gas_membrane_corrected"),
-                                                        ("Background corrected", "background_corrected"), (
-                                                            "Second normalized \u03BC", "second_normalized_\u03BC"),
-                                                        ("Fit", "fit")
-                                                    ],
-                                                    value="value",
-                                                    description='Pick an y-axis',
-                                                    disabled=False,
-                                                    style={'description_width': 'initial'}),
-                                                gas=widgets.Text(
-                                                    value="""{"He":1, "%":100}""",
-                                                    description='Gas.es:',
-                                                    disabled=False,
-                                                    continuous_update=False,
-                                                    style={'description_width': 'initial'}),
-                                                d=widgets.FloatText(
-                                                    step=0.0001,
-                                                    value=0.0005,
-                                                    description='membrane thickness:',
-                                                    disabled=False,
-                                                    style={'description_width': 'initial'}),
-                                                p=widgets.FloatText(
-                                                    value=101325,
-                                                    description='Pressure:',
-                                                    disabled=False,
-                                                    style={'description_width': 'initial'}))
+        self._list_correction_gas = interactive(
+            self.correction_gas,
+            spec_number=widgets.SelectMultiple(
+                options=self.class_list,
+                value=self.class_list[0:1],
+                rows=5,
+                description='Spectra to correct:',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(display="flex", flex_flow='column')),
+            df=widgets.Dropdown(
+                options=[
+                    ("Renamed data", "df"),
+                    ("Shifted data", "shifted_df"),
+                    ("Reduced data", "reduced_df"),
+                    ("Reduced by Splines", "reduced_df_splines"),
+                    ("Fitted data", "fit_df")
+                ],
+                value="df",
+                description='Use the dataframe:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            x=widgets.Dropdown(
+                options=["Energy"],
+                value="Energy",
+                description='Pick an x-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            y=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                    ("Fit", "fit"),
+                ],
+                value="value",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            gas=widgets.Text(
+                value="""{"He":1, "%":100}""",
+                description='Gas.es:',
+                disabled=False,
+                continuous_update=False,
+                style={'description_width': 'initial'}),
+            d=widgets.FloatText(
+                step=0.0001,
+                value=0.0005,
+                description='membrane thickness:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            p=widgets.FloatText(
+                value=101325,
+                description='Pressure:',
+                disabled=False,
+                style={'description_width': 'initial'}))
         self.widget_list_correction_gas = widgets.VBox([
-            self._list_correction_gas.children[0], widgets.HBox(
-                self._list_correction_gas.children[1:4]),
-            widgets.HBox(
-                self._list_correction_gas.children[4:7]), self._list_correction_gas.children[-1]
+            self._list_correction_gas.children[0],
+            widgets.HBox(self._list_correction_gas.children[1:4]),
+            widgets.HBox(self._list_correction_gas.children[4:7]),
+            self._list_correction_gas.children[-1]
         ])
 
-        self._list_correction_membrane = interactive(self.correction_membrane,
-                                                     spec_number=widgets.SelectMultiple(
-                                                         options=self.class_list,
-                                                         value=self.class_list[0:1],
-                                                         rows=5,
-                                                         description='Spectra to correct:',
-                                                         disabled=False,
-                                                         style={
-                                                             'description_width': 'initial'},
-                                                         layout=Layout(display="flex", flex_flow='column')),
-                                                     df=widgets.Dropdown(
-                                                         options=[("Renamed data", "df"), ("Shifted data", "shifted_df"), ("Reduced data", "reduced_df"), (
-                                                             "Reduced by Splines", "reduced_df_splines"), ("Fitted data", "fit_df")],
-                                                         value="df",
-                                                         description='Use the dataframe:',
-                                                         disabled=False,
-                                                         style={'description_width': 'initial'}),
-                                                     x=widgets.Dropdown(
-                                                         options=[
-                                                             ("Energy", "Energy")],
-                                                         value="Energy",
-                                                         description='Pick an x-axis',
-                                                         disabled=False,
-                                                         style={'description_width': 'initial'}),
-                                                     y=widgets.Dropdown(
-                                                         options=[
-                                                             ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                                 "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                             ("Reference shift", "reference_shift"), ("First normalized \u03BC",
-                                                                                                      "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                                             ("Membrane corrected", "membrane_corrected"), (
-                                                                 "Gas & membrane corrected", "gas_membrane_corrected"),
-                                                             ("Background corrected", "background_corrected"), (
-                                                                 "Second normalized \u03BC", "second_normalized_\u03BC"),
-                                                             ("Fit", "fit")
-                                                         ],
-                                                         value="value",
-                                                         description='Pick an y-axis',
-                                                         disabled=False,
-                                                         style={'description_width': 'initial'}),
-                                                     apply_all=widgets.Checkbox(
-                                                         value=False,
-                                                         description='Combine gas & Membrane correction.',
-                                                         disabled=False,
-                                                         style={'description_width': 'initial'}))
+        self._list_correction_membrane = interactive(
+            self.correction_membrane,
+            spec_number=widgets.SelectMultiple(
+                options=self.class_list,
+                value=self.class_list[0:1],
+                rows=5,
+                description='Spectra to correct:',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(display="flex", flex_flow='column')),
+            df=widgets.Dropdown(
+                options=[
+                    ("Renamed data", "df"),
+                    ("Shifted data", "shifted_df"),
+                    ("Reduced data", "reduced_df"),
+                    ("Reduced by Splines", "reduced_df_splines"),
+                    ("Fitted data", "fit_df")
+                ],
+                value="df",
+                description='Use the dataframe:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            x=widgets.Dropdown(
+                options=["Energy"],
+                value="Energy",
+                description='Pick an x-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            y=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                    ("Fit", "fit"),
+                ],
+                value="value",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            apply_all=widgets.Checkbox(
+                value=False,
+                description='Combine gas & Membrane correction.',
+                disabled=False,
+                style={'description_width': 'initial'}))
         self.widget_list_correction_membrane = widgets.VBox([
-            self._list_correction_membrane.children[0], widgets.HBox(
-                self._list_correction_membrane.children[1:4]),
-            self._list_correction_membrane.children[-2], self._list_correction_membrane.children[-1]
+            self._list_correction_membrane.children[0],
+            widgets.HBox(self._list_correction_membrane.children[1:4]),
+            self._list_correction_membrane.children[-2],
+            self._list_correction_membrane.children[-1]
         ])
 
-        self._list_deglitching = interactive(self.correction_deglitching,
-                                             spec=widgets.Dropdown(
-                                                 options=self.class_list,
-                                                 description='Select the Dataset:',
-                                                 disabled=False,
-                                                 style={
-                                                     'description_width': 'initial'},
-                                                 layout=Layout(width="60%")),
-                                             df=widgets.Dropdown(
-                                                 options=[("Renamed data", "df"), ("Shifted data", "shifted_df"), ("Reduced data", "reduced_df"), (
-                                                     "Reduced by Splines", "reduced_df_splines"), ("Fitted data", "fit_df")],
-                                                 value="df",
-                                                 description='Use the dataframe:',
-                                                 disabled=False,
-                                                 layout=Layout(width="50%"),
-                                                 style={'description_width': 'initial'}),
-                                             pts=widgets.BoundedIntText(
-                                                 value=5,
-                                                 min=1,
-                                                 max=20,
-                                                 step=1,
-                                                 description="Nb of extra points",
-                                                 layout=Layout(width="50%"),
-                                                 style={
-                                                     'description_width': 'initial'},
-                                                 disabled=False),
-                                             x=widgets.Dropdown(
-                                                 options=[
-                                                     ("Energy", "Energy")],
-                                                 value="Energy",
-                                                 description='Pick an x-axis',
-                                                 disabled=False,
-                                                 style={'description_width': 'initial'}),
-                                             y=widgets.Dropdown(
-                                                 options=[
-                                                     ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                         "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                     ("Reference shift", "reference_shift"), ("First normalized \u03BC",
-                                                                                              "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                                     ("Membrane corrected", "membrane_corrected"), (
-                                                         "Gas & membrane corrected", "gas_membrane_corrected"),
-                                                     ("Background corrected", "background_corrected"), (
-                                                         "Second normalized \u03BC", "second_normalized_\u03BC"),
-                                                     ("Fit", "fit"), ("Weights", "weights"), (
-                                                         "RMS", "RMS"), ("User error", "user_error")
-                                                 ],
-                                                 value="value",
-                                                 description='Pick an y-axis',
-                                                 disabled=False,
-                                                 style={'description_width': 'initial'}),
-                                             tipo=widgets.Dropdown(
-                                                 options=[
-                                                     ("Linear", "linear"), ("Quadratic", "quadratic"), ("Cubic", "cubic")],
-                                                 value="linear",
-                                                 description='Choose an order:',
-                                                 disabled=False,
-                                                 style={'description_width': 'initial'}))
-        self.widget_list_deglitching = widgets.VBox([self._list_deglitching.children[0], widgets.HBox(
-            self._list_deglitching.children[1:3]), widgets.HBox(self._list_deglitching.children[3:6]), self._list_deglitching.children[-1]])
+        self._list_deglitching = interactive(
+            self.correction_deglitching,
+            spec=widgets.Dropdown(
+                options=self.class_list,
+                description='Select the Dataset:',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(width="60%")),
+            df=widgets.Dropdown(
+                options=[
+                    ("Renamed data", "df"),
+                    ("Shifted data", "shifted_df"),
+                    ("Reduced data", "reduced_df"),
+                    ("Reduced by Splines", "reduced_df_splines"),
+                    ("Fitted data", "fit_df")
+                ],
+                value="df",
+                description='Use the dataframe:',
+                disabled=False,
+                layout=Layout(width="50%"),
+                style={'description_width': 'initial'}),
+            pts=widgets.BoundedIntText(
+                value=5,
+                min=1,
+                max=20,
+                step=1,
+                description="Nb of extra points",
+                layout=Layout(width="50%"),
+                style={'description_width': 'initial'},
+                disabled=False),
+            x=widgets.Dropdown(
+                options=["Energy"],
+                value="Energy",
+                description='Pick an x-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            y=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                    ("Fit", "fit"),
+                    ("Weights", "weights"),
+                    ("RMS", "RMS"),
+                    ("User error", "user_error")
+                ],
+                value="value",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            tipo=widgets.Dropdown(
+                options=[
+                    ("Linear", "linear"),
+                    ("Quadratic", "quadratic"),
+                    ("Cubic", "cubic")
+                ],
+                value="linear",
+                description='Choose an order:',
+                disabled=False,
+                style={'description_width': 'initial'}))
+        self.widget_list_deglitching = widgets.VBox([
+            self._list_deglitching.children[0],
+            widgets.HBox(self._list_deglitching.children[1:3]),
+            widgets.HBox(self._list_deglitching.children[3:6]),
+            self._list_deglitching.children[-1]])
 
-        self._list_merge_energies = interactive(self.merge_energies,
-                                                spec_number=widgets.SelectMultiple(
-                                                    options=self.class_list,
-                                                    value=self.class_list[0:1],
-                                                    rows=5,
-                                                    description='Spectra to merge:',
-                                                    disabled=False,
-                                                    style={
-                                                        'description_width': 'initial'},
-                                                    layout=Layout(display="flex", flex_flow='column')),
-                                                df=widgets.Dropdown(
-                                                    options=[("Renamed data", "df"), ("Shifted data", "shifted_df"), ("Reduced data", "reduced_df"), (
-                                                        "Reduced by Splines", "reduced_df_splines"), ("Fitted data", "fit_df")],
-                                                    value="reduced_df",
-                                                    description='Use the dataframe:',
-                                                    disabled=False,
-                                                    style={'description_width': 'initial'}),
-                                                x=widgets.Dropdown(
-                                                    options=[
-                                                        ("Energy", "Energy")],
-                                                    value="Energy",
-                                                    description='Pick an x-axis',
-                                                    disabled=False,
-                                                    style={'description_width': 'initial'}),
-                                                y=widgets.Dropdown(
-                                                    options=[
-                                                        ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                            "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                        ("Reference shift", "reference_shift"), ("First normalized \u03BC",
-                                                                                                 "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                                        ("Membrane corrected", "membrane_corrected"), (
-                                                            "Gas & membrane corrected", "gas_membrane_corrected"),
-                                                        ("Background corrected", "background_corrected"), (
-                                                            "Second normalized \u03BC", "second_normalized_\u03BC"),
-                                                        ("Fit", "fit"), ("Weights", "weights"), (
-                                                            "RMS", "RMS"), ("User error", "user_error")
-                                                    ],
-                                                    value="value",
-                                                    description='Pick an y-axis',
-                                                    disabled=False,
-                                                    style={'description_width': 'initial'}),
-                                                title=widgets.Text(
-                                                    value="<newcsvfile>",
-                                                    placeholder="<newcsvfile>",
-                                                    description='Type the name you wish to save:',
-                                                    disabled=False,
-                                                    continuous_update=False,
-                                                    style={'description_width': 'initial'}),
-                                                merge_bool=widgets.Checkbox(
-                                                    value=False,
-                                                    description='Start merging',
-                                                    disabled=False,
-                                                    style={'description_width': 'initial'}))
+        self._list_merge_energies = interactive(
+            self.merge_energies,
+            spec_number=widgets.SelectMultiple(
+                options=self.class_list,
+                value=self.class_list[0:1],
+                rows=5,
+                description='Spectra to merge:',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(display="flex", flex_flow='column')),
+            df=widgets.Dropdown(
+                options=[
+                    ("Renamed data", "df"),
+                    ("Shifted data", "shifted_df"),
+                    ("Reduced data", "reduced_df"),
+                    ("Reduced by Splines", "reduced_df_splines"),
+                    ("Fitted data", "fit_df")
+                ],
+                value="reduced_df",
+                description='Use the dataframe:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            x=widgets.Dropdown(
+                options=["Energy"],
+                value="Energy",
+                description='Pick an x-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            y=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                    ("Fit", "fit"),
+                    ("Weights", "weights"),
+                    ("RMS", "RMS"),
+                    ("User error", "user_error")
+                ],
+                value="value",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            title=widgets.Text(
+                value="<newcsvfile>",
+                placeholder="<newcsvfile>",
+                description='Type the name you wish to save:',
+                disabled=False,
+                continuous_update=False,
+                style={'description_width': 'initial'}),
+            merge_bool=widgets.Checkbox(
+                value=False,
+                description='Start merging',
+                disabled=False,
+                style={'description_width': 'initial'}))
         self._list_merge_energies.children[5].observe(
             self.merge_bool_handler, names="value")
-        self.widget_list_merge_energies = widgets.VBox([self._list_merge_energies.children[0], widgets.HBox(
-            self._list_merge_energies.children[1:4]), self._list_merge_energies.children[-3], self._list_merge_energies.children[-2], self._list_merge_energies.children[-1]])
+        self.widget_list_merge_energies = widgets.VBox([
+            self._list_merge_energies.children[0],
+            widgets.HBox(self._list_merge_energies.children[1:4]),
+            self._list_merge_energies.children[-3],
+            self._list_merge_energies.children[-2],
+            self._list_merge_energies.children[-1]
+        ])
 
-        self._list_errors_extraction = interactive(self.errors_extraction,
-                                                   spec=widgets.Dropdown(
-                                                       options=self.class_list,
-                                                       description='Dataset:',
-                                                       disabled=False,
-                                                       style={
-                                                           'description_width': 'initial'},
-                                                       layout=Layout(width='60%')),
-                                                   df=widgets.Dropdown(
-                                                       options=[("Renamed data", "df"), ("Shifted data", "shifted_df"), ("Reduced data", "reduced_df"), (
-                                                           "Reduced by Splines", "reduced_df_splines"), ("Fitted data", "fit_df")],
-                                                       value="df",
-                                                       description='Dataframe:',
-                                                       disabled=False,
-                                                       style={
-                                                           'description_width': 'initial'},
-                                                       layout=Layout(width="60%")),
-                                                   xcol=widgets.Dropdown(
-                                                       options=[
-                                                           ("Energy", "Energy")],
-                                                       value="Energy",
-                                                       description='Pick an x-axis',
-                                                       disabled=False,
-                                                       style={'description_width': 'initial'}),
-                                                   ycol=widgets.Dropdown(
-                                                       options=[
-                                                           ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                               "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                           ("Reference shift", "reference_shift"), ("First normalized \u03BC",
-                                                                                                    "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                                           ("Membrane corrected", "membrane_corrected"), (
-                                                               "Gas & membrane corrected", "gas_membrane_corrected"),
-                                                           ("Background corrected", "background_corrected"), (
-                                                               "Second normalized \u03BC", "second_normalized_\u03BC"),
-                                                           ("Fit", "fit"), ("Weights",
-                                                                            "weights")
-                                                       ],
-                                                       value="value",
-                                                       description='Pick an y-axis',
-                                                       disabled=False,
-                                                       style={'description_width': 'initial'}),
-                                                   nbpts=widgets.Dropdown(
-                                                       options=[
-                                                           i for i in range(5, 20)],
-                                                       value=13,
-                                                       description='Nb of points per interval:',
-                                                       disabled=False,
-                                                       style={'description_width': 'initial'}),
-                                                   deg=widgets.IntSlider(
-                                                       value=2,
-                                                       min=0,
-                                                       max=3,
-                                                       step=1,
-                                                       description='Degree:',
-                                                       disabled=False,
-                                                       orientation="horizontal",
-                                                       continuous_update=False,
-                                                       readout=True,
-                                                       readout_format="d",
-                                                       style={'description_width': 'initial'}),
-                                                   direction=widgets.Dropdown(
-                                                       options=[
-                                                           ("Left", "left"), ("Right", "right")],
-                                                       value="left",
-                                                       description='Direction if odd:',
-                                                       disabled=False,
-                                                       style={'description_width': 'initial'}),
-                                                   compute=widgets.Checkbox(
-                                                       value=False,
-                                                       description='Compute errors',
-                                                       disabled=False,
-                                                       style={'description_width': 'initial'}))
+        self._list_errors_extraction = interactive(
+            self.errors_extraction,
+            spec=widgets.Dropdown(
+                options=self.class_list,
+                description='Dataset:',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(width='60%')),
+            df=widgets.Dropdown(
+                options=[
+                    ("Renamed data", "df"),
+                    ("Shifted data", "shifted_df"),
+                    ("Reduced data", "reduced_df"),
+                    ("Reduced by Splines", "reduced_df_splines"),
+                    ("Fitted data", "fit_df")
+                ],
+                value="df",
+                description='Dataframe:',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(width="60%")),
+            xcol=widgets.Dropdown(
+                options=["Energy"],
+                value="Energy",
+                description='Pick an x-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            ycol=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                    ("Fit", "fit"),
+                    ("Weights", "weights"),
+                ],
+                value="value",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            nbpts=widgets.Dropdown(
+                options=[i for i in range(5, 20)],
+                value=13,
+                description='Nb of points per interval:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            deg=widgets.IntSlider(
+                value=2,
+                min=0,
+                max=3,
+                step=1,
+                description='Degree:',
+                disabled=False,
+                orientation="horizontal",
+                continuous_update=False,
+                readout=True,
+                readout_format="d",
+                style={'description_width': 'initial'}),
+            direction=widgets.Dropdown(
+                options=[("Left", "left"), ("Right", "right")],
+                value="left",
+                description='Direction if odd:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            compute=widgets.Checkbox(
+                value=False,
+                description='Compute errors',
+                disabled=False,
+                style={'description_width': 'initial'}))
         self._list_errors_extraction.children[7].observe(
             self.error_extraction_handler, names="value")
-        self.widget_list_errors_extraction = widgets.VBox([self._list_errors_extraction.children[0], widgets.HBox(self._list_errors_extraction.children[1:3]), widgets.HBox(
-            self._list_errors_extraction.children[3:7]), self._list_errors_extraction.children[-2], self._list_errors_extraction.children[-1]])
+        self.widget_list_errors_extraction = widgets.VBox([
+            self._list_errors_extraction.children[0],
+            widgets.HBox(self._list_errors_extraction.children[1:3]),
+            widgets.HBox(self._list_errors_extraction.children[3:7]),
+            self._list_errors_extraction.children[-2],
+            self._list_errors_extraction.children[-1]
+        ])
 
-        self._list_LCF = interactive(self.LCF,
-                                     ref_spectra=widgets.SelectMultiple(
-                                         options=self.class_list,
-                                         value=self.class_list[0:2],
-                                         description='Select at least two references for LCF:',
-                                         disabled=False,
-                                         style={
-                                             'description_width': 'initial'},
-                                         layout=Layout(display="flex", flex_flow='column', width="50%")),
-                                     spec_number=widgets.SelectMultiple(
-                                         options=self.class_list,
-                                         value=self.class_list[2:5],
-                                         rows=5,
-                                         description='Spectra to analyze:',
-                                         disabled=False,
-                                         style={
-                                             'description_width': 'initial'},
-                                         layout=Layout(display="flex", flex_flow='column', width="50%")),
-                                     spec=widgets.Dropdown(
-                                         options=self.class_list,
-                                         description='Dataset to plot between the Datasets to analyze:',
-                                         disabled=False,
-                                         style={
-                                             'description_width': 'initial'},
-                                         layout=Layout(width='60%')),
-                                     df_type=widgets.Dropdown(
-                                         options=[("Renamed data", "df"), ("Shifted data", "shifted_df"), ("Reduced data", "reduced_df"), (
-                                             "Reduced by Splines", "reduced_df_splines"), ("Fitted data", "fit_df")],
-                                         value="reduced_df",
-                                         description='Pick the dataframe:',
-                                         disabled=False,
-                                         style={'description_width': 'initial'}),
-                                     x=widgets.Dropdown(
-                                         options=[("Energy", "Energy")],
-                                         value="Energy",
-                                         description='Pick an x-axis',
-                                         disabled=False,
-                                         style={'description_width': 'initial'}),
-                                     y=widgets.Dropdown(
-                                         options=[
-                                             ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                 "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                             ("Reference shift", "reference_shift"), ("First normalized \u03BC",
-                                                                                      "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                             ("Membrane corrected", "membrane_corrected"), (
-                                                 "Gas & membrane corrected", "gas_membrane_corrected"),
-                                             ("Background corrected", "background_corrected"), (
-                                                 "Second normalized \u03BC", "second_normalized_\u03BC"),
-                                             ("Fit", "fit"),
-                                         ],
-                                         value="second_normalized_\u03BC",
-                                         description='Pick an y-axis',
-                                         disabled=False,
-                                         style={'description_width': 'initial'}),
-                                     LCF_bool=widgets.Checkbox(
-                                         value=False,
-                                         description='Perform LCF',
-                                         disabled=False,
-                                         style={'description_width': 'initial'}))
-        self.widget_list_LCF = widgets.VBox([widgets.HBox(self._list_LCF.children[:2]), widgets.HBox(
-            self._list_LCF.children[2:4]), widgets.HBox(self._list_LCF.children[4:6]), self._list_LCF.children[-2], self._list_LCF.children[-1]])
+        self._list_LCF = interactive(
+            self.LCF,
+            ref_spectra=widgets.SelectMultiple(
+                options=self.class_list,
+                value=self.class_list[0:2],
+                description='Select at least two references for LCF:',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(display="flex", flex_flow='column', width="50%")),
+            spec_number=widgets.SelectMultiple(
+                options=self.class_list,
+                value=self.class_list[2:5],
+                rows=5,
+                description='Spectra to analyze:',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(display="flex", flex_flow='column', width="50%")),
+            spec=widgets.Dropdown(
+                options=self.class_list,
+                description='Dataset to plot between the Datasets to analyze:',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(width='60%')),
+            df_type=widgets.Dropdown(
+                options=[
+                    ("Renamed data", "df"),
+                    ("Shifted data", "shifted_df"),
+                    ("Reduced data", "reduced_df"),
+                    ("Reduced by Splines", "reduced_df_splines"),
+                    ("Fitted data", "fit_df")
+                ],
+                value="reduced_df",
+                description='Pick the dataframe:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            x=widgets.Dropdown(
+                options=["Energy"],
+                value="Energy",
+                description='Pick an x-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            y=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                    ("Fit", "fit"),
+                ],
+                value="second_normalized_\u03BC",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            LCF_bool=widgets.Checkbox(
+                value=False,
+                description='Perform LCF',
+                disabled=False,
+                style={'description_width': 'initial'}))
+        self.widget_list_LCF = widgets.VBox([
+            widgets.HBox(self._list_LCF.children[:2]),
+            widgets.HBox(self._list_LCF.children[2:4]),
+            widgets.HBox(self._list_LCF.children[4:6]),
+            self._list_LCF.children[-2],
+            self._list_LCF.children[-1]
+        ])
 
-        self._list_import_data = interactive(self.import_data,
-                                             data_name=widgets.Text(
-                                                 placeholder='<name>',
-                                                 description='Name:',
-                                                 disabled=False,
-                                                 continuous_update=False,
-                                                 style={
-                                                     'description_width': 'initial'},
-                                                 layout=Layout(width="50%", height='40px')),
-                                             data_format=widgets.Dropdown(
-                                                 options=[
-                                                     (".npy"), (".csv"), (".txt"), (".dat"), (".nxs")],
-                                                 value=".npy",
-                                                 description='Format:',
-                                                 disabled=False,
-                                                 style={
-                                                     'description_width': 'initial'},
-                                                 layout=Layout(width="50%", height='40px')),
-                                             delimiter_type=widgets.Dropdown(
-                                                 options=[
-                                                     ("Comma", ","), ("Tabulation", "\t"), ("Semicolon", ";"), ("Space", " ")],
-                                                 value="\t",
-                                                 description='Column delimiter type:',
-                                                 disabled=True,
-                                                 style={
-                                                     'description_width': 'initial'},
-                                                 layout=Layout(width="50%", height='40px')),
-                                             decimal_separator=widgets.Dropdown(
-                                                 options=[
-                                                     ("Dot", "."), ("Comma", ",")],
-                                                 value=".",
-                                                 description='Decimal delimiter type:',
-                                                 disabled=True,
-                                                 style={
-                                                     'description_width': 'initial'},
-                                                 layout=Layout(width="50%", height='40px')),
-                                             energy_shift=widgets.FloatText(
-                                                 value=0,
-                                                 step=self.interpol_step,
-                                                 description='Energy shift (eV):',
-                                                 readout=True,
-                                                 readout_format='.2f',
-                                                 disabled=False,
-                                                 style={
-                                                     'description_width': 'initial'},
-                                                 layout=Layout(width="50%", height='40px')),
-                                             scale_factor=widgets.FloatText(
-                                                 step=0.01,
-                                                 value=1,
-                                                 description='Scale factor:',
-                                                 readout=True,
-                                                 readout_format='.2f',
-                                                 disabled=False,
-                                                 style={
-                                                     'description_width': 'initial'},
-                                                 layout=Layout(width="50%", height='40px')))
-        self.widget_list_import_data = widgets.VBox([widgets.HBox(self._list_import_data.children[:2]), widgets.HBox(
-            self._list_import_data.children[2:4]), widgets.HBox(self._list_import_data.children[4:6]), self._list_import_data.children[-1]])
+        self._list_import_data = interactive(
+            self.import_data,
+            data_name=widgets.Text(
+                placeholder='<name>',
+                description='Name:',
+                disabled=False,
+                continuous_update=False,
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%", height='40px')),
+            data_format=widgets.Dropdown(
+                options=[(".npy"), (".csv"), (".txt"), (".dat"), (".nxs")],
+                value=".npy",
+                description='Format:',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%", height='40px')),
+            delimiter_type=widgets.Dropdown(
+                options=[
+                    ("Comma", ","), ("Tabulation", "\t"),
+                    ("Semicolon", ";"), ("Space", " ")],
+                value="\t",
+                description='Column delimiter type:',
+                disabled=True,
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%", height='40px')),
+            decimal_separator=widgets.Dropdown(
+                options=[("Dot", "."), ("Comma", ",")],
+                value=".",
+                description='Decimal delimiter type:',
+                disabled=True,
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%", height='40px')),
+            energy_shift=widgets.FloatText(
+                value=0,
+                step=self.interpol_step,
+                description='Energy shift (eV):',
+                readout=True,
+                readout_format='.2f',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%", height='40px')),
+            scale_factor=widgets.FloatText(
+                step=0.01,
+                value=1,
+                description='Scale factor:',
+                readout=True,
+                readout_format='.2f',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%", height='40px')))
+        self.widget_list_import_data = widgets.VBox([
+            widgets.HBox(self._list_import_data.children[:2]),
+            widgets.HBox(self._list_import_data.children[2:4]),
+            widgets.HBox(self._list_import_data.children[4:6]),
+            self._list_import_data.children[-1]
+        ])
         self._list_import_data.children[1].observe(
             self.delimiter_decimal_separator_handler, names="value")
 
-        self._list_save_as_nexus = interactive(self.save_as_nexus,
-                                               spec_number=widgets.SelectMultiple(
-                                                   options=self.class_list,
-                                                   value=self.class_list[0:1],
-                                                   rows=5,
-                                                   description='Spectra to save:',
-                                                   disabled=False,
-                                                   style={
-                                                       'description_width': 'initial'},
-                                                   layout=Layout(display="flex", flex_flow='column')),
-                                               apply_all=widgets.Checkbox(
-                                                   value=False,
-                                                   description='Save',
-                                                   disabled=False,
-                                                   style={'description_width': 'initial'}))
-        self.widget_list_save_as_nexus = widgets.VBox([widgets.HBox(
-            self._list_save_as_nexus.children[:2]), self._list_save_as_nexus.children[-1]])
+        self._list_save_as_nexus = interactive(
+            self.save_as_nexus,
+            spec_number=widgets.SelectMultiple(
+                options=self.class_list,
+                value=self.class_list[0:1],
+                rows=5,
+                description='Spectra to save:',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(display="flex", flex_flow='column')),
+            apply_all=widgets.Checkbox(
+                value=False,
+                description='Save',
+                disabled=False,
+                style={'description_width': 'initial'}))
+        self.widget_list_save_as_nexus = widgets.VBox([
+            widgets.HBox(self._list_save_as_nexus.children[:2]),
+            self._list_save_as_nexus.children[-1]
+        ])
 
         # Widgets for the Reduction
-        self._list_tab_reduce_method = interactive(self.reduce_data,
-                                                   method=widgets.ToggleButtons(
-                                                       options=[
-                                                           ("Least square method", "LSF"), ("Chebyshev polynomials", "Chebyshev"), (
-                                                               "Polynoms", "Polynoms"), ("Single Spline", "SingleSpline"),
-                                                           ("Splines", "Splines"),
-                                                           #("Normalize by maximum", "NormMax")
-                                                       ],
-                                                       value="LSF",
-                                                       description='Pick reduction method:',
-                                                       disabled=True,
-                                                       button_style="",
-                                                       tooltips=['Least Square method', 'Chebyshev Polynomials', "Multiple polynoms derived on short Intervals", "Subtraction of a spline",
-                                                                 "Pre-edge and post-edge splines determination", "Normalize spectra by maximum intensity value"],
-                                                       style={'description_width': 'initial'}),
-                                                   used_class_list=widgets.SelectMultiple(
-                                                       options=self.class_list,
-                                                       value=self.class_list[0:1],
-                                                       rows=5,
-                                                       description='Select all the datasets to reduce together:',
-                                                       disabled=True,
-                                                       style={
-                                                           'description_width': 'initial'},
-                                                       layout=Layout(display="flex", flex_flow='column')),
-                                                   used_datasets=widgets.Dropdown(
-                                                       options=self.class_list,
-                                                       description="Dataset to plot between the Datasets to analyze:",
-                                                       disabled=True,
-                                                       style={
-                                                           'description_width': 'initial'},
-                                                       layout=Layout(width="60%")),
-                                                   df=widgets.Dropdown(
-                                                       options=[("Renamed data", "df"), ("Shifted data", "shifted_df"), ("Reduced data", "reduced_df"), (
-                                                           "Reduced by Splines", "reduced_df_splines"), ("Fitted data", "fit_df")],
-                                                       value="shifted_df",
-                                                       description='Select the dataframe:',
-                                                       disabled=True,
-                                                       style={'description_width': 'initial'}),
-                                                   plot_bool=widgets.Checkbox(
-                                                       value=False,
-                                                       description='Start reduction',
-                                                       disabled=True,
-                                                       style={'description_width': 'initial'}))
+        self._list_tab_reduce_method = interactive(
+            self.reduce_data,
+            method=widgets.ToggleButtons(
+                options=[
+                    ("Least square method", "LSF"),
+                    ("Chebyshev polynomials", "Chebyshev"),
+                    ("Polynoms", "Polynoms"),
+                    ("Single Spline", "SingleSpline"),
+                    ("Splines", "Splines"),
+                    #("Normalize by maximum", "NormMax")
+                ],
+                value="LSF",
+                description='Pick reduction method:',
+                disabled=True,
+                button_style="",
+                tooltips=[
+                    'Least Square method',
+                    'Chebyshev Polynomials',
+                    "Multiple polynoms derived on short Intervals",
+                    "Subtraction of a spline",
+                    "Pre-edge and post-edge splines determination",
+                    "Normalize spectra by maximum intensity value"
+                ],
+                style={'description_width': 'initial'}),
+            used_class_list=widgets.SelectMultiple(
+                options=self.class_list,
+                value=self.class_list[0:1],
+                rows=5,
+                description='Select all the datasets to reduce together:',
+                disabled=True,
+                style={'description_width': 'initial'},
+                layout=Layout(display="flex", flex_flow='column')),
+            used_datasets=widgets.Dropdown(
+                options=self.class_list,
+                description="Dataset to plot between the Datasets to analyze:",
+                disabled=True,
+                style={'description_width': 'initial'},
+                layout=Layout(width="60%")),
+            df=widgets.Dropdown(
+                options=[
+                    ("Renamed data", "df"),
+                    ("Shifted data", "shifted_df"),
+                    ("Reduced data", "reduced_df"),
+                    ("Reduced by Splines", "reduced_df_splines"),
+                    ("Fitted data", "fit_df")
+                ],
+                value="shifted_df",
+                description='Select the dataframe:',
+                disabled=True,
+                style={'description_width': 'initial'}),
+            plot_bool=widgets.Checkbox(
+                value=False,
+                description='Start reduction',
+                disabled=True,
+                style={'description_width': 'initial'}))
         self._list_tab_reduce_method.children[4].observe(
             self.reduce_bool_handler, names="value")
 
@@ -983,455 +1096,522 @@ class Interface():
             self._list_tab_reduce_method.children[3:5]), self._list_tab_reduce_method.children[-1]])
 
         # Widgets for the LSF background reduction and normalization method
-        self._list_reduce_LSF = interactive(self.reduce_LSF,
-                                            y=widgets.Dropdown(
-                                                options=[
-                                                    ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                        "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                    ("Reference shift", "reference_shift"), ("First normalized \u03BC",
-                                                                                             "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                                    ("Membrane corrected", "membrane_corrected"), (
-                                                        "Gas & membrane corrected", "gas_membrane_corrected"),
-                                                    ("Background corrected", "background_corrected"), (
-                                                        "Second normalized \u03BC", "second_normalized_\u03BC")
-                                                ],
-                                                value="value",
-                                                description='Pick an y-axis',
-                                                disabled=False,
-                                                style={
-                                                    'description_width': 'initial'},
-                                                layout=Layout(width="50%", height='40px')),
-                                            interval=widgets.FloatRangeSlider(
-                                                min=self.new_energy_column[0],
-                                                value=[
-                                                    self.new_energy_column[0], self.new_energy_column[-1]],
-                                                max=self.new_energy_column[-1],
-                                                step=self.interpol_step,
-                                                description='Energy range (eV):',
-                                                disabled=False,
-                                                continuous_update=False,
-                                                orientation="horizontal",
-                                                readout=True,
-                                                readout_format='.2f',
-                                                style={
-                                                    'description_width': 'initial'},
-                                                layout=Layout(width="50%", height='40px')),
-                                            lam=widgets.IntSlider(
-                                                value=10**7,
-                                                min=10**4,
-                                                max=10**7,
-                                                step=1,
-                                                description='lambda:',
-                                                disabled=False,
-                                                continuous_update=False,
-                                                orientation="horizontal",
-                                                readout=True,
-                                                readout_format="d",
-                                                style={'description_width': 'initial'}),
-                                            p=widgets.IntSlider(
-                                                value=2,
-                                                min=1,
-                                                max=100,
-                                                step=1,
-                                                description='p:',
-                                                disabled=False,
-                                                continuous_update=False,
-                                                orientation="horizontal",
-                                                readout=True,
-                                                readout_format="d",
-                                                style={'description_width': 'initial'}))
-        self.widget_list_reduce_LSF = widgets.VBox([self._list_reduce_LSF.children[0], self._list_reduce_LSF.children[1], widgets.HBox(
-            self._list_reduce_LSF.children[2:4]), self._list_reduce_LSF.children[-1]])
+        self._list_reduce_LSF = interactive(
+            self.reduce_LSF,
+            y=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                ],
+                value="value",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%", height='40px')),
+            interval=widgets.FloatRangeSlider(
+                min=self.new_energy_column[0],
+                value=[
+                    self.new_energy_column[0], self.new_energy_column[-1]],
+                max=self.new_energy_column[-1],
+                step=self.interpol_step,
+                description='Energy range (eV):',
+                disabled=False,
+                continuous_update=False,
+                orientation="horizontal",
+                readout=True,
+                readout_format='.2f',
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%", height='40px')),
+            lam=widgets.IntSlider(
+                value=10**7,
+                min=10**4,
+                max=10**7,
+                step=1,
+                description='lambda:',
+                disabled=False,
+                continuous_update=False,
+                orientation="horizontal",
+                readout=True,
+                readout_format="d",
+                style={'description_width': 'initial'}),
+            p=widgets.IntSlider(
+                value=2,
+                min=1,
+                max=100,
+                step=1,
+                description='p:',
+                disabled=False,
+                continuous_update=False,
+                orientation="horizontal",
+                readout=True,
+                readout_format="d",
+                style={'description_width': 'initial'}))
+        self.widget_list_reduce_LSF = widgets.VBox([
+            self._list_reduce_LSF.children[0],
+            self._list_reduce_LSF.children[1],
+            widgets.HBox(self._list_reduce_LSF.children[2:4]),
+            self._list_reduce_LSF.children[-1]
+        ])
 
         # Widgets for the chebyshev background reduction and normalization method
-        self._list_reduce_chebyshev = interactive(self.reduce_chebyshev,
-                                                  y=widgets.Dropdown(
-                                                      options=[
-                                                          ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                              "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                          ("Reference shift", "reference_shift"), ("First normalized \u03BC",
-                                                                                                   "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                                          ("Membrane corrected", "membrane_corrected"), (
-                                                              "Gas & membrane corrected", "gas_membrane_corrected"),
-                                                          ("Background corrected", "background_corrected"), (
-                                                              "Second normalized \u03BC", "second_normalized_\u03BC")
-                                                      ],
-                                                      value="value",
-                                                      description='Pick an y-axis',
-                                                      disabled=False,
-                                                      style={'description_width': 'initial'}),
-                                                  interval=widgets.FloatRangeSlider(
-                                                      min=self.new_energy_column[0],
-                                                      value=[
-                                                          self.new_energy_column[0], self.new_energy_column[-1]],
-                                                      max=self.new_energy_column[-1],
-                                                      step=self.interpol_step,
-                                                      description='Energy range (eV):',
-                                                      disabled=False,
-                                                      continuous_update=False,
-                                                      orientation="horizontal",
-                                                      readout=True,
-                                                      readout_format='.2f',
-                                                      style={
-                                                          'description_width': 'initial'},
-                                                      layout=Layout(width="50%", height='40px')),
-                                                  p=widgets.IntSlider(
-                                                      value=10,
-                                                      min=0,
-                                                      max=100,
-                                                      step=1,
-                                                      description='Degree of Polynomials:',
-                                                      disabled=False,
-                                                      continuous_update=False,
-                                                      orientation="horizontal",
-                                                      readout=True,
-                                                      readout_format="d",
-                                                      style={'description_width': 'initial'}),
-                                                  n=widgets.IntSlider(
-                                                      value=2,
-                                                      min=1,
-                                                      max=10,
-                                                      step=1,
-                                                      description='Importance of weights ',
-                                                      disabled=False,
-                                                      continuous_update=False,
-                                                      orientation="horizontal",
-                                                      readout=True,
-                                                      readout_format="d",
-                                                      style={'description_width': 'initial'}))
+        self._list_reduce_chebyshev = interactive(
+            self.reduce_chebyshev,
+            y=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                ],
+                value="value",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            interval=widgets.FloatRangeSlider(
+                min=self.new_energy_column[0],
+                value=[
+                    self.new_energy_column[0], self.new_energy_column[-1]],
+                max=self.new_energy_column[-1],
+                step=self.interpol_step,
+                description='Energy range (eV):',
+                disabled=False,
+                continuous_update=False,
+                orientation="horizontal",
+                readout=True,
+                readout_format='.2f',
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%", height='40px')),
+            p=widgets.IntSlider(
+                value=10,
+                min=0,
+                max=100,
+                step=1,
+                description='Degree of Polynomials:',
+                disabled=False,
+                continuous_update=False,
+                orientation="horizontal",
+                readout=True,
+                readout_format="d",
+                style={'description_width': 'initial'}),
+            n=widgets.IntSlider(
+                value=2,
+                min=1,
+                max=10,
+                step=1,
+                description='Importance of weights ',
+                disabled=False,
+                continuous_update=False,
+                orientation="horizontal",
+                readout=True,
+                readout_format="d",
+                style={'description_width': 'initial'}))
         self.widget_list_reduce_chebyshev = widgets.VBox([
-            self._list_reduce_chebyshev.children[0], self._list_reduce_chebyshev.children[1],
-            widgets.HBox(
-                self._list_reduce_chebyshev.children[2:4]), self._list_reduce_chebyshev.children[-1]
+            self._list_reduce_chebyshev.children[0],
+            self._list_reduce_chebyshev.children[1],
+            widgets.HBox(self._list_reduce_chebyshev.children[2:4]),
+            self._list_reduce_chebyshev.children[-1]
         ])
 
         # Widgets for the Polynoms background reduction and normalization method
-        self._list_reduce_polynoms = interactive(self.reduce_polynoms,
-                                                 y=widgets.Dropdown(
-                                                     options=[
-                                                         ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                             "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                         ("Reference shift", "reference_shift"), ("First normalized \u03BC",
-                                                                                                  "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                                         ("Membrane corrected", "membrane_corrected"), (
-                                                             "Gas & membrane corrected", "gas_membrane_corrected"),
-                                                         ("Background corrected", "background_corrected"), (
-                                                             "Second normalized \u03BC", "second_normalized_\u03BC")
-                                                     ],
-                                                     value="value",
-                                                     description='Pick an y-axis',
-                                                     disabled=False,
-                                                     style={'description_width': 'initial'}),
-                                                 interval=widgets.FloatRangeSlider(
-                                                     min=self.new_energy_column[0],
-                                                     value=[
-                                                         self.new_energy_column[0], self.new_energy_column[-1]],
-                                                     max=self.new_energy_column[-1],
-                                                     step=self.interpol_step,
-                                                     description='Energy range (eV):',
-                                                     disabled=False,
-                                                     continuous_update=False,
-                                                     orientation="horizontal",
-                                                     readout=True,
-                                                     readout_format='.2f',
-                                                     style={
-                                                         'description_width': 'initial'},
-                                                     layout=Layout(width="50%", height='40px')),
-                                                 sL=widgets.BoundedIntText(
-                                                     value=4,
-                                                     min=4,
-                                                     max=11,
-                                                     step=1,
-                                                     description='Slider pts::',
-                                                     disabled=False,
-                                                     style={'description_width': 'initial'}))
+        self._list_reduce_polynoms = interactive(
+            self.reduce_polynoms,
+            y=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                ],
+                value="value",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            interval=widgets.FloatRangeSlider(
+                min=self.new_energy_column[0],
+                value=[
+                    self.new_energy_column[0], self.new_energy_column[-1]],
+                max=self.new_energy_column[-1],
+                step=self.interpol_step,
+                description='Energy range (eV):',
+                disabled=False,
+                continuous_update=False,
+                orientation="horizontal",
+                readout=True,
+                readout_format='.2f',
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%", height='40px')),
+            sL=widgets.BoundedIntText(
+                value=4,
+                min=4,
+                max=11,
+                step=1,
+                description='Slider pts::',
+                disabled=False,
+                style={'description_width': 'initial'}))
         self.widget_list_reduce_polynoms = widgets.VBox([
-            self._list_reduce_polynoms.children[0], self._list_reduce_polynoms.children[1],
-            self._list_reduce_polynoms.children[2], self._list_reduce_polynoms.children[-1]
+            self._list_reduce_polynoms.children[0],
+            self._list_reduce_polynoms.children[1],
+            self._list_reduce_polynoms.children[2],
+            self._list_reduce_polynoms.children[-1]
         ])
 
         # Widgets for the single spline background reduction and normalization method
-        self._list_reduce_single_spline = interactive(self.reduce_single_spline,
-                                                      y=widgets.Dropdown(
-                                                          options=[
-                                                              ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                                  "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                              ("Reference shift", "reference_shift"), (
-                                                                  "First normalized \u03BC", "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                                              ("Membrane corrected", "membrane_corrected"), (
-                                                                  "Gas & membrane corrected", "gas_membrane_corrected"),
-                                                              ("Background corrected", "background_corrected"), (
-                                                                  "Second normalized \u03BC", "second_normalized_\u03BC")
-                                                          ],
-                                                          value="value",
-                                                          description='Pick an y-axis',
-                                                          disabled=False,
-                                                          style={'description_width': 'initial'}),
-                                                      order=widgets.Dropdown(
-                                                          options=[("Select and order", "value"), ("Victoreen", "victoreen"), (
-                                                              "0", 0), ("1", 1), ("2", 2), ("3", 3)],
-                                                          value="value",
-                                                          description='Order:',
-                                                          disabled=False,
-                                                          style={'description_width': 'initial'}),
-                                                      interval=widgets.FloatRangeSlider(
-                                                          min=self.new_energy_column[0],
-                                                          value=[self.new_energy_column[0], np.round(
-                                                              self.new_energy_column[0] + 0.33*(self.new_energy_column[-1] - self.new_energy_column[0]), 0)],
-                                                          max=self.new_energy_column[-1],
-                                                          step=self.interpol_step,
-                                                          description='Energy range (eV):',
-                                                          disabled=False,
-                                                          continuous_update=False,
-                                                          orientation="horizontal",
-                                                          readout=True,
-                                                          readout_format='.2f',
-                                                          style={
-                                                              'description_width': 'initial'},
-                                                          layout=Layout(width="50%", height='40px')),
-                                                      cursor=widgets.FloatSlider(
-                                                          value=np.round(self.new_energy_column[0] + 0.45*(
-                                                              self.new_energy_column[-1] - self.new_energy_column[0]), 0),
-                                                          step=self.interpol_step,
-                                                          min=self.new_energy_column[0],
-                                                          max=self.new_energy_column[-1],
-                                                          description='Cursor:',
-                                                          orientation="horizontal",
-                                                          continuous_update=False,
-                                                          readout=True,
-                                                          readout_format='.2f',
-                                                          style={
-                                                              'description_width': 'initial'},
-                                                          disabled=False),
-                                                      param_A=widgets.Text(
-                                                          value="1000000000",
-                                                          placeholder='A = ',
-                                                          description='A:',
-                                                          disabled=True,
-                                                          continuous_update=False,
-                                                          style={'description_width': 'initial'}),
-                                                      param_B=widgets.Text(
-                                                          value="1000000000",
-                                                          placeholder='B = ',
-                                                          description='B:',
-                                                          disabled=True,
-                                                          continuous_update=False,
-                                                          style={'description_width': 'initial'}))
-        self.widget_list_reduce_single_spline = widgets.VBox([widgets.HBox(self._list_reduce_single_spline.children[:2]), self._list_reduce_single_spline.children[2],
-                                                             self._list_reduce_single_spline.children[3], widgets.HBox(self._list_reduce_single_spline.children[4:6]), self._list_reduce_single_spline.children[-1]])
+        self._list_reduce_single_spline = interactive(
+            self.reduce_single_spline,
+            y=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                ],
+                value="value",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            order=widgets.Dropdown(
+                options=[
+                    ("Select and order", "value"),
+                    ("Victoreen", "victoreen"),
+                    ("0", 0),
+                    ("1", 1),
+                    ("2", 2),
+                    ("3", 3)
+                ],
+                value="value",
+                description='Order:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            interval=widgets.FloatRangeSlider(
+                min=self.new_energy_column[0],
+                value=[self.new_energy_column[0], np.round(
+                    self.new_energy_column[0] + 0.33*(self.new_energy_column[-1] - self.new_energy_column[0]), 0)],
+                max=self.new_energy_column[-1],
+                step=self.interpol_step,
+                description='Energy range (eV):',
+                disabled=False,
+                continuous_update=False,
+                orientation="horizontal",
+                readout=True,
+                readout_format='.2f',
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%", height='40px')),
+            cursor=widgets.FloatSlider(
+                value=np.round(self.new_energy_column[0] + 0.45*(
+                    self.new_energy_column[-1] - self.new_energy_column[0]), 0),
+                step=self.interpol_step,
+                min=self.new_energy_column[0],
+                max=self.new_energy_column[-1],
+                description='Cursor:',
+                orientation="horizontal",
+                continuous_update=False,
+                readout=True,
+                readout_format='.2f',
+                style={'description_width': 'initial'},
+                disabled=False),
+            param_A=widgets.Text(
+                value="1000000000",
+                placeholder='A = ',
+                description='A:',
+                disabled=True,
+                continuous_update=False,
+                style={'description_width': 'initial'}),
+            param_B=widgets.Text(
+                value="1000000000",
+                placeholder='B = ',
+                description='B:',
+                disabled=True,
+                continuous_update=False,
+                style={'description_width': 'initial'}))
+        self.widget_list_reduce_single_spline = widgets.VBox([
+            widgets.HBox(self._list_reduce_single_spline.children[:2]),
+            self._list_reduce_single_spline.children[2],
+            self._list_reduce_single_spline.children[3],
+            widgets.HBox(self._list_reduce_single_spline.children[4:6]),
+            self._list_reduce_single_spline.children[-1]
+        ])
         self._list_reduce_single_spline.children[1].observe(
             self.param_victoreen_handler_single, names="value")
 
         # Widgets for the Splines background reduction and normalization method
-        self._list_reduce_splines_derivative = interactive(self.reduce_splines_derivative,
-                                                           y=widgets.Dropdown(
-                                                               options=[
-                                                                   ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                                       "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                                   ("Reference shift", "reference_shift"), (
-                                                                       "First normalized \u03BC", "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                                                   ("Membrane corrected", "membrane_corrected"), (
-                                                                       "Gas & membrane corrected", "gas_membrane_corrected"),
-                                                                   ("Background corrected", "background_corrected"), (
-                                                                       "Second normalized \u03BC", "second_normalized_\u03BC")
-                                                               ],
-                                                               value="value",
-                                                               description='Pick an y-axis',
-                                                               disabled=False,
-                                                               style={'description_width': 'initial'}),
-                                                           interval=widgets.FloatRangeSlider(
-                                                               min=self.new_energy_column[0],
-                                                               value=[
-                                                                   self.new_energy_column[0], self.new_energy_column[-1]],
-                                                               max=self.new_energy_column[-1],
-                                                               step=self.interpol_step,
-                                                               description='Energy range (eV):',
-                                                               disabled=False,
-                                                               continuous_update=False,
-                                                               orientation="horizontal",
-                                                               readout=True,
-                                                               readout_format='.2f',
-                                                               style={
-                                                                   'description_width': 'initial'},
-                                                               layout=Layout(width="50%", height='40px')))
+        self._list_reduce_splines_derivative = interactive(
+            self.reduce_splines_derivative,
+            y=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                ],
+                value="value",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            interval=widgets.FloatRangeSlider(
+                min=self.new_energy_column[0],
+                value=[
+                    self.new_energy_column[0], self.new_energy_column[-1]],
+                max=self.new_energy_column[-1],
+                step=self.interpol_step,
+                description='Energy range (eV):',
+                disabled=False,
+                continuous_update=False,
+                orientation="horizontal",
+                readout=True,
+                readout_format='.2f',
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%", height='40px')))
         self.widget_list_reduce_splines_derivative = widgets.VBox(
             [self._list_reduce_splines_derivative.children[0], self._list_reduce_splines_derivative.children[1], self._list_reduce_splines_derivative.children[-1]])
 
         # Widgets for the LSF background reduction and normalization method
-        self._list_normalize_maxima = interactive(self.normalize_maxima,
-                                                  y=widgets.Dropdown(
-                                                      options=[
-                                                          ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                              "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                          ("Reference shift", "reference_shift"), ("First normalized \u03BC",
-                                                                                                   "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                                          ("Membrane corrected", "membrane_corrected"), (
-                                                              "Gas & membrane corrected", "gas_membrane_corrected"),
-                                                          ("Background corrected", "background_corrected"), (
-                                                              "Second normalized \u03BC", "second_normalized_\u03BC"), ("Fit", "fit")
-                                                      ],
-                                                      value="value",
-                                                      description='Pick an y-axis',
-                                                      disabled=False,
-                                                      style={
-                                                          'description_width': 'initial'},
-                                                      layout=Layout(width="50%", height='40px')),
-                                                  interval=widgets.FloatRangeSlider(
-                                                      min=self.new_energy_column[0],
-                                                      value=[
-                                                          self.new_energy_column[0], self.new_energy_column[-1]],
-                                                      max=self.new_energy_column[-1],
-                                                      step=self.interpol_step,
-                                                      description='Energy range (eV):',
-                                                      disabled=False,
-                                                      continuous_update=False,
-                                                      orientation="horizontal",
-                                                      readout=True,
-                                                      readout_format='.2f',
-                                                      style={
-                                                          'description_width': 'initial'},
-                                                      layout=Layout(width="50%", height='40px')))
-        self.widget_list_normalize_maxima = widgets.VBox(
-            [self._list_normalize_maxima.children[0], self._list_normalize_maxima.children[1], self._list_normalize_maxima.children[-1]])
+        self._list_normalize_maxima = interactive(
+            self.normalize_maxima,
+            y=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                ],
+                value="value",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%", height='40px')),
+            interval=widgets.FloatRangeSlider(
+                min=self.new_energy_column[0],
+                value=[
+                    self.new_energy_column[0], self.new_energy_column[-1]],
+                max=self.new_energy_column[-1],
+                step=self.interpol_step,
+                description='Energy range (eV):',
+                disabled=False,
+                continuous_update=False,
+                orientation="horizontal",
+                readout=True,
+                readout_format='.2f',
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%", height='40px')))
+        self.widget_list_normalize_maxima = widgets.VBox([
+            self._list_normalize_maxima.children[0],
+            self._list_normalize_maxima.children[1],
+            self._list_normalize_maxima.children[-1]
+        ])
 
         # Widgets for the fit,
-        self._list_define_fitting_df = interactive(self.define_fitting_df,
-                                                   spec=widgets.Dropdown(
-                                                       options=self.class_list,
-                                                       description='Select the Dataset:',
-                                                       disabled=True,
-                                                       style={
-                                                           'description_width': 'initial'},
-                                                       layout=Layout(width='60%')),
-                                                   printed_df=widgets.Dropdown(
-                                                       options=[("Renamed data", "df"), ("Shifted data", "shifted_df"), ("Reduced data", "reduced_df"), (
-                                                           "Reduced by Splines", "reduced_df_splines"), ("Fitted data", "fit_df")],
-                                                       value="df",
-                                                       description='Select the dataframe:',
-                                                       disabled=True,
-                                                       style={'description_width': 'initial'}),
-                                                   show=widgets.Checkbox(
-                                                       value=False,
-                                                       description='Fix dataframe.',
-                                                       disabled=True,
-                                                       style={'description_width': 'initial'}))
+        self._list_define_fitting_df = interactive(
+            self.define_fitting_df,
+            spec=widgets.Dropdown(
+                options=self.class_list,
+                description='Select the Dataset:',
+                disabled=True,
+                style={'description_width': 'initial'},
+                layout=Layout(width='60%')),
+            printed_df=widgets.Dropdown(
+                options=[
+                    ("Renamed data", "df"),
+                    ("Shifted data", "shifted_df"),
+                    ("Reduced data", "reduced_df"),
+                    ("Reduced by Splines", "reduced_df_splines"),
+                    ("Fitted data", "fit_df")
+                ],
+                value="df",
+                description='Select the dataframe:',
+                disabled=True,
+                style={'description_width': 'initial'}),
+            show=widgets.Checkbox(
+                value=False,
+                description='Fix dataframe.',
+                disabled=True,
+                style={'description_width': 'initial'}))
         self._list_define_fitting_df.children[2].observe(
             self.fit_handler, names="value")
-        self.tab_fit = widgets.VBox([widgets.HBox(
-            self._list_define_fitting_df.children[:3]), self._list_define_fitting_df.children[-1]])
+        self.tab_fit = widgets.VBox([
+            widgets.HBox(self._list_define_fitting_df.children[:3]),
+            self._list_define_fitting_df.children[-1]
+        ])
 
-        self._list_define_model = interactive(self.define_model,
-                                              xcol=widgets.Dropdown(
-                                                  options=[
-                                                      ("Energy", "Energy")],
-                                                  value="Energy",
-                                                  description='Pick an x-axis',
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}),
-                                              ycol=widgets.Dropdown(
-                                                  options=[
-                                                      ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                          "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                      ("Reference shift", "reference_shift"), ("First normalized \u03BC",
-                                                                                               "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                                      ("Membrane corrected", "membrane_corrected"), (
-                                                          "Gas & membrane corrected", "gas_membrane_corrected"),
-                                                      ("Background corrected", "background_corrected"), (
-                                                          "Second normalized \u03BC", "second_normalized_\u03BC"),
-                                                      ("Fit", "fit"),
-                                                  ],
-                                                  value="\u03BC",
-                                                  description='Pick an y-axis',
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}),
-                                              interval=widgets.FloatRangeSlider(
-                                                  min=self.new_energy_column[0],
-                                                  value=[
-                                                      self.new_energy_column[0], self.new_energy_column[-1]],
-                                                  max=self.new_energy_column[-1],
-                                                  step=self.interpol_step,
-                                                  description='Energy range (eV):',
-                                                  disabled=False,
-                                                  continuous_update=False,
-                                                  orientation="horizontal",
-                                                  readout=True,
-                                                  readout_format='.2f',
-                                                  style={
-                                                      'description_width': 'initial'},
-                                                  layout=Layout(width="50%", height='40px')),
-                                              peak_number=widgets.BoundedIntText(
-                                                  value=2,
-                                                  min=0,
-                                                  max=10,
-                                                  step=1,
-                                                  description='Amount of Peaks:',
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}),
-                                              peak_type=widgets.Dropdown(
-                                                  options=[
-                                                      ("Gaussian", GaussianModel), ("Lorentzian", LorentzianModel), (
-                                                          "Split Lorentzian", SplitLorentzianModel), ("Voigt", VoigtModel),
-                                                      ("Pseudo-Voigt", PseudoVoigtModel), ("Moffat", MoffatModel), (
-                                                          "Pearson7", Pearson7Model), ("StudentsT", StudentsTModel),
-                                                      ("Breit-Wigner", BreitWignerModel), ("Log-normal",
-                                                                                           LognormalModel), ("Exponential-Gaussian", ExponentialGaussianModel),
-                                                      ("Skewed-Gaussian", SkewedGaussianModel), ("Skewed-Voigt",
-                                                                                                 SkewedVoigtModel), ("Donaich", DonaichModel)
-                                                  ],
-                                                  value=LorentzianModel,
-                                                  description='Peak distribution:',
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}),
-                                              background_type=widgets.Dropdown(
-                                                  options=[("Constant", ConstantModel), ("Linear", LinearModel), ("Victoreen", "victoreen"), (
-                                                      "Quadratic", QuadraticModel), ("Polynomial", PolynomialModel)],
-                                                  value=ConstantModel,
-                                                  description='Background mode:',
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}),
-                                              pol_degree=widgets.IntSlider(
-                                                  value=3,
-                                                  min=0,
-                                                  max=7,
-                                                  step=1,
-                                                  description='Degree:',
-                                                  disabled=True,
-                                                  orientation="horizontal",
-                                                  continuous_update=False,
-                                                  readout=True,
-                                                  readout_format="d",
-                                                  style={'description_width': 'initial'}),
-                                              step_type=widgets.Dropdown(
-                                                  options=[("No step", False), ("linear", "linear"), (
-                                                      "arctan", "arctan"), ("erf", "erf"), ("logistic", "logistic")],
-                                                  value=False,
-                                                  description='Step mode:',
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}),
-                                              method=widgets.Dropdown(
-                                                  options=[
-                                                      ("Levenberg-Marquardt", "leastsq"), ("Nelder-Mead",
-                                                                                           "nelder"), ("L-BFGS-B", "lbfgsb"), ("BFGS", "bfgs"),
-                                                      ("Maximum likelihood via Monte-Carlo Markov Chain", "emcee")
-                                                  ],
-                                                  value="leastsq",
-                                                  description='Pick a minimization method (read doc first):',
-                                                  disabled=False,
-                                                  style={
-                                                      'description_width': 'initial'},
-                                                  layout=Layout(width="50%")),
-                                              w=widgets.Dropdown(
-                                                  options=[("No (=1)", False), ("\u03BC Variance (1/\u03BC)",
-                                                                                "\u03BC_variance"), ("RMS", "RMS"), ("User error", "user_error")],
-                                                  value=False,
-                                                  description='Use weights.',
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}),
-                                              fix_model=widgets.Checkbox(
-                                                  value=False,
-                                                  description='Fix Model.',
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}))
+        self._list_define_model = interactive(
+            self.define_model,
+            xcol=widgets.Dropdown(
+                options=["Energy"],
+                value="Energy",
+                description='Pick an x-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            ycol=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                    ("Fit", "fit"),
+                ],
+
+                value="\u03BC",
+                description='Pick an y-axis',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            interval=widgets.FloatRangeSlider(
+                min=self.new_energy_column[0],
+                value=[
+                    self.new_energy_column[0], self.new_energy_column[-1]],
+                max=self.new_energy_column[-1],
+                step=self.interpol_step,
+                description='Energy range (eV):',
+                disabled=False,
+                continuous_update=False,
+                orientation="horizontal",
+                readout=True,
+                readout_format='.2f',
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%", height='40px')),
+            peak_number=widgets.BoundedIntText(
+                value=2,
+                min=0,
+                max=10,
+                step=1,
+                description='Amount of Peaks:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            peak_type=widgets.Dropdown(
+                options=[
+                    ("Gaussian", GaussianModel),
+                    ("Lorentzian", LorentzianModel),
+                    ("Split Lorentzian", SplitLorentzianModel),
+                    ("Voigt", VoigtModel),
+                    ("Pseudo-Voigt", PseudoVoigtModel),
+                    ("Moffat", MoffatModel),
+                    ("Pearson7", Pearson7Model),
+                    ("StudentsT", StudentsTModel),
+                    ("Breit-Wigner", BreitWignerModel),
+                    ("Log-normal", LognormalModel),
+                    ("Exponential-Gaussian", ExponentialGaussianModel),
+                    ("Skewed-Gaussian", SkewedGaussianModel),
+                    ("Skewed-Voigt", SkewedVoigtModel),
+                    ("Donaich", DonaichModel)
+                ],
+                value=LorentzianModel,
+                description='Peak distribution:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            background_type=widgets.Dropdown(
+                options=[
+                    ("Constant", ConstantModel),
+                    ("Linear", LinearModel),
+                    ("Victoreen", "victoreen"),
+                    ("Quadratic", QuadraticModel),
+                    ("Polynomial", PolynomialModel)
+                ],
+                value=ConstantModel,
+                description='Background mode:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            pol_degree=widgets.IntSlider(
+                value=3,
+                min=0,
+                max=7,
+                step=1,
+                description='Degree:',
+                disabled=True,
+                orientation="horizontal",
+                continuous_update=False,
+                readout=True,
+                readout_format="d",
+                style={'description_width': 'initial'}),
+            step_type=widgets.Dropdown(
+                options=[
+                    ("No step", False),
+                    ("linear", "linear"),
+                    ("arctan", "arctan"),
+                    ("erf", "erf"),
+                    ("logistic", "logistic")
+                ],
+                value=False,
+                description='Step mode:',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            method=widgets.Dropdown(
+                options=[
+                    ("Levenberg-Marquardt", "leastsq"),
+                    ("Nelder-Mead", "nelder"),
+                    ("L-BFGS-B", "lbfgsb"),
+                    ("BFGS", "bfgs"),
+                    ("Maximum likelihood via Monte-Carlo Markov Chain", "emcee")
+                ],
+                value="leastsq",
+                description='Pick a minimization method (read doc first):',
+                disabled=False,
+                style={'description_width': 'initial'},
+                layout=Layout(width="50%")),
+            w=widgets.Dropdown(
+                options=[
+                    ("No (=1)", False),
+                    ("\u03BC Variance (1/\u03BC)", "\u03BC_variance"),
+                    ("RMS", "RMS"),
+                    ("User error", "user_error")
+                ],
+                value=False,
+                description='Use weights.',
+                disabled=False,
+                style={'description_width': 'initial'}),
+            fix_model=widgets.Checkbox(
+                value=False,
+                description='Fix Model.',
+                disabled=False,
+                style={'description_width': 'initial'}))
         self.widget_list_define_model = widgets.VBox([
             widgets.HBox(self._list_define_model.children[0:2]), self._list_define_model.children[2], widgets.HBox(
                 self._list_define_model.children[3:5]),
@@ -1444,135 +1624,165 @@ class Interface():
             self.model_degree_handler, names="value")
 
         # Widgets for the plotting
-        self._list_plot_dataset = interactive(self.plot_dataset,
-                                              spec_number=widgets.SelectMultiple(
-                                                  options=self.class_list,
-                                                  value=self.class_list[0:1],
-                                                  rows=5,
-                                                  description='Spectra to plot:',
-                                                  disabled=True,
-                                                  style={
-                                                      'description_width': 'initial'},
-                                                  layout=Layout(display="flex", flex_flow='column')),
-                                              plot_df=widgets.Dropdown(
-                                                  options=[("Renamed data", "df"), ("Shifted data", "shifted_df"), ("Reduced data", "reduced_df"), (
-                                                      "Reduced by Splines", "reduced_df_splines"), ("Fitted data", "fit_df")],
-                                                  value="df",
-                                                  description='Use the dataframe:',
-                                                  disabled=True,
-                                                  style={'description_width': 'initial'}),
-                                              x=widgets.Dropdown(
-                                                  options=[
-                                                      ("Energy", "Energy")],
-                                                  value="Energy",
-                                                  description='Pick an x-axis',
-                                                  disabled=True,
-                                                  style={'description_width': 'initial'}),
-                                              y=widgets.Dropdown(
-                                                  options=[
-                                                      ("Select a value", "value"), ("Sample intensity", "sample_intensity"), (
-                                                          "\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                      ("Reference shift", "reference_shift"), ("First normalized \u03BC",
-                                                                                               "first_normalized_\u03BC"), ("Gas corrected", "gas_corrected"),
-                                                      ("Membrane corrected", "membrane_corrected"), (
-                                                          "Gas & membrane corrected", "gas_membrane_corrected"),
-                                                      ("Background corrected", "background_corrected"), (
-                                                          "Second normalized \u03BC", "second_normalized_\u03BC"),
-                                                      ("Fit", "fit"), ("Weights", "weights"), ("RMS",
-                                                                                               "RMS"), ("User error", "user_error")
-                                                  ],
-                                                  value="\u03BC",
-                                                  description='Pick an y-axis',
-                                                  disabled=True,
-                                                  style={'description_width': 'initial'}),
-                                              x_axis=widgets.Text(
-                                                  value="Energy",
-                                                  placeholder="Energy",
-                                                  description='Type the name of the x axis:',
-                                                  disabled=True,
-                                                  continuous_update=False,
-                                                  style={'description_width': 'initial'}),
-                                              y_axis=widgets.Text(
-                                                  value='Intensity',
-                                                  placeholder='Intensity',
-                                                  description='Type the name of the y axis:',
-                                                  disabled=True,
-                                                  continuous_update=False,
-                                                  style={'description_width': 'initial'}),
-                                              title=widgets.Text(
-                                                  value='Plot',
-                                                  placeholder='Plot',
-                                                  description='Type the title you wish to use:',
-                                                  disabled=True,
-                                                  continuous_update=False,
-                                                  style={'description_width': 'initial'}),
-                                              check_plot=widgets.ToggleButtons(
-                                                  options=[
-                                                      ('Clear', "Zero"), ('Plot', "Plot"), ("3D", "3D")],
-                                                  value="Zero",
-                                                  description='Plot:',
-                                                  disabled=True,
-                                                  button_style="",
-                                                  tooltips=[
-                                                      'Nothing is plotted', 'We plot one Dataset', 'We plot all the spectra'],
-                                                  style={'description_width': 'initial'}))
+        self._list_plot_dataset = interactive(
+            self.plot_dataset,
+            spec_number=widgets.SelectMultiple(
+                options=self.class_list,
+                value=self.class_list[0:1],
+                rows=5,
+                description='Spectra to plot:',
+                disabled=True,
+                style={'description_width': 'initial'},
+                layout=Layout(display="flex", flex_flow='column')),
+            plot_df=widgets.Dropdown(
+                options=[
+                    ("Renamed data", "df"),
+                    ("Shifted data", "shifted_df"),
+                    ("Reduced data", "reduced_df"),
+                    ("Reduced by Splines", "reduced_df_splines"),
+                    ("Fitted data", "fit_df")
+                ],
+                value="df",
+                description='Use the dataframe:',
+                disabled=True,
+                style={'description_width': 'initial'}),
+            x=widgets.Dropdown(
+                options=[
+                    ("Energy", "Energy")],
+                value="Energy",
+                description='Pick an x-axis',
+                disabled=True,
+                style={'description_width': 'initial'}),
+            y=widgets.Dropdown(
+                options=[
+                    ("Select a value", "value"),
+                    ("Sample intensity", "sample_intensity"),
+                    ("\u03BC", "\u03BC"),
+                    ("Mesh", "mesh"),
+                    ("Reference shift", "reference_shift"),
+                    ("First normalized \u03BC", "first_normalized_\u03BC"),
+                    ("Gas corrected", "gas_corrected"),
+                    ("Membrane corrected", "membrane_corrected"),
+                    ("Gas & membrane corrected", "gas_membrane_corrected"),
+                    ("Background corrected", "background_corrected"),
+                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
+                    ("Fit", "fit"),
+                    ("Weights", "weights"),
+                    ("RMS", "RMS"),
+                    ("User error", "user_error")
+                ],
+                value="\u03BC",
+                description='Pick an y-axis',
+                disabled=True,
+                style={'description_width': 'initial'}),
+            x_axis=widgets.Text(
+                value="Energy",
+                placeholder="Energy",
+                description='Type the name of the x axis:',
+                disabled=True,
+                continuous_update=False,
+                style={'description_width': 'initial'}),
+            y_axis=widgets.Text(
+                value='Intensity',
+                placeholder='Intensity',
+                description='Type the name of the y axis:',
+                disabled=True,
+                continuous_update=False,
+                style={'description_width': 'initial'}),
+            title=widgets.Text(
+                value='Plot',
+                placeholder='Plot',
+                description='Type the title you wish to use:',
+                disabled=True,
+                continuous_update=False,
+                style={'description_width': 'initial'}),
+            check_plot=widgets.ToggleButtons(
+                options=[('Clear', "Zero"), ('Plot', "Plot"), ("3D", "3D")],
+                value="Zero",
+                description='Plot:',
+                disabled=True,
+                button_style="",
+                tooltips=[
+                    'Nothing is plotted',
+                    'We plot one Dataset',
+                    'We plot all the spectra'
+                ],
+                style={'description_width': 'initial'}))
         self.tab_plot = widgets.VBox([
-            self._list_plot_dataset.children[0], widgets.HBox(
-                self._list_plot_dataset.children[1:4]),
-            widgets.HBox(
-                self._list_plot_dataset.children[4:7]), self._list_plot_dataset.children[-2],
+            self._list_plot_dataset.children[0],
+            widgets.HBox(self._list_plot_dataset.children[1:4]),
+            widgets.HBox(self._list_plot_dataset.children[4:7]),
+            self._list_plot_dataset.children[-2],
             self._list_plot_dataset.children[-1]
         ])
 
         # Widgets for the logbook
-        self._list_print_logbook = interactive(self.print_logbook,
-                                               logbook_name=widgets.Text(
-                                                   value="logbook.xlsx",
-                                                   placeholder='<logbookname>.xlsx',
-                                                   description='Type the name of the logbook:',
-                                                   disabled=True,
-                                                   continuous_update=False,
-                                                   style={'description_width': 'initial'}),
-                                               logbook_bool=widgets.Checkbox(
-                                                   value=True,
-                                                   description='Reset and hide logbook',
-                                                   disabled=True,
-                                                   style={'description_width': 'initial'}),
-                                               column=widgets.Text(
-                                                   value="Quality",
-                                                   placeholder='Quality',
-                                                   description='Column:',
-                                                   continuous_update=False,
-                                                   disabled=True,
-                                                   style={'description_width': 'initial'}),
-                                               value=widgets.Text(
-                                                   value="True",
-                                                   placeholder='True',
-                                                   description='Value:',
-                                                   continuous_update=False,
-                                                   disabled=True,
-                                                   style={'description_width': 'initial'}))
-        self.tab_logbook = widgets.VBox([widgets.HBox(self._list_print_logbook.children[:2]), widgets.HBox(
-            self._list_print_logbook.children[2:4]), self._list_print_logbook.children[-1]])
+        self._list_print_logbook = interactive(
+            self.print_logbook,
+            logbook_name=widgets.Text(
+                value="logbook.xlsx",
+                placeholder='<logbookname>.xlsx',
+                description='Type the name of the logbook:',
+                disabled=True,
+                continuous_update=False,
+                style={'description_width': 'initial'}),
+            logbook_bool=widgets.Checkbox(
+                value=True,
+                description='Reset and hide logbook',
+                disabled=True,
+                style={'description_width': 'initial'}),
+            column=widgets.Text(
+                value="Quality",
+                placeholder='Quality',
+                description='Column:',
+                continuous_update=False,
+                disabled=True,
+                style={'description_width': 'initial'}),
+            value=widgets.Text(
+                value="True",
+                placeholder='True',
+                description='Value:',
+                continuous_update=False,
+                disabled=True,
+                style={'description_width': 'initial'}))
+        self.tab_logbook = widgets.VBox([
+            widgets.HBox(self._list_print_logbook.children[:2]),
+            widgets.HBox(self._list_print_logbook.children[2:4]),
+            self._list_print_logbook.children[-1]
+        ])
 
         # Widgets for the ReadMe
-        self.tab_readme = interactive(self.display_readme,
-                                      contents=widgets.ToggleButtons(
-                                          options=['Treatment',
-                                                   'Reduction', 'Fit', "Else"],
-                                          value="Treatment",
-                                          description='Show info about:',
-                                          disabled=False,
-                                          tooltips=[
-                                              'Nothing is shown', 'Insight in the functions used for treatment',
-                                              'Insight in the functions used for Background',
-                                              'Insight in the functions used for fitting'
-                                          ],
-                                          style={'description_width': 'initial'}))
+        self.tab_readme = interactive(
+            self.display_readme,
+            contents=widgets.ToggleButtons(
+                options=[
+                    'Treatment',
+                    'Reduction',
+                    'Fit',
+                    "Else"
+                ],
+                value="Treatment",
+                description='Show info about:',
+                disabled=False,
+                tooltips=[
+                    'Nothing is shown',
+                    'Insight in the functions used for treatment',
+                    'Insight in the functions used for Background',
+                    'Insight in the functions used for fitting'
+                ],
+                style={'description_width': 'initial'}))
 
         # Create the final window
-        self.window = widgets.Tab(children=[self.tab_init, self.tab_data, self.tab_tools,
-                                  self.tab_reduce_method, self.tab_fit, self.tab_plot, self.tab_logbook, self.tab_readme])
+        self.window = widgets.Tab(children=[
+            self.tab_init,
+            self.tab_data,
+            self.tab_tools,
+            self.tab_reduce_method,
+            self.tab_fit,
+            self.tab_plot,
+            self.tab_logbook,
+            self.tab_readme
+        ])
         self.window.set_title(0, 'Initialize')
         self.window.set_title(1, 'View Data')
         self.window.set_title(2, 'Tools')
@@ -1592,7 +1802,22 @@ class Interface():
             for w in self._list_widgets_init.children[:-2]:
                 w.disabled = True
 
-            for w in self._list_data.children[:-1] + self.tab_tools.children[:-1] + self._list_tab_reduce_method.children[:-1] + self._list_define_fitting_df.children[:-1] + self._list_plot_dataset.children[:-1] + self._list_print_logbook.children[:-1]:
+            for w in self._list_data.children[:-1]:
+                w.disabled = False
+
+            for w in self.tab_tools.children[:-1]:
+                w.disabled = False
+
+            for w in self._list_tab_reduce_method.children[:-1]:
+                w.disabled = False
+
+            for w in self._list_define_fitting_df.children[:-1]:
+                w.disabled = False
+
+            for w in self._list_plot_dataset.children[:-1]:
+                w.disabled = False
+
+            for w in self._list_print_logbook.children[:-1]:
                 w.disabled = False
 
             # Show the plotting first
@@ -1605,7 +1830,9 @@ class Interface():
 
     # Readme interactive function
     def display_readme(self, contents):
-        """All the necessary information to be displayed via the ReadMe tab are written here in a Markdown format.
+        """
+        All the necessary information to be displayed via the ReadMe tab
+        are written here in a Markdown format.
         """
 
         if contents == "Treatment":
@@ -1881,7 +2108,10 @@ class Interface():
     # Initialization function if previous work had been done
     @staticmethod
     def get_class_list(data_folder):
-        """Retrieve all the classes, that corespond to the Dataset in the folder at <location>
+        """
+        Retrieve all the Dataset classes pickled in data_folder
+
+        :param data_folder: folder used to find Dataset
         """
         work_dir = "./"
         path_classes = work_dir + str(data_folder)+"/Classes"
@@ -1897,7 +2127,8 @@ class Interface():
 
             except EOFError:
                 print(
-                    f"{n} is empty, restart the procedure from the beginning, this may be due to a crash of Jupyter.")
+                    f"{n} is empty, restart the procedure from the beginning, \
+                    this may be due to a crash of Jupyter.")
             except FileNotFoundError:
                 print(f"The Class does not exist for {n}")
 
@@ -1927,16 +2158,28 @@ class Interface():
               at the end of your work.
             _ data_folder/import_data where you can add extra files used in
               fitting
+
+        :param data_folder: root folder to store data in
+        :param fix_name: True to fix data_folder
+        :param create_folders: True to create subdirectories
+        :param data_type: Data type to be loaded (.csv, .txt, ...)
+        :param delimiter_type: Delimiter type in text data
+        :param decimal_separator: Decimal separator in text data
+        :param marker: True to load the data only between two markers
+        :param initial_marker: Initial marker
+        :param final_marker: Final marker
+        :param delete: Delete all processed data
+        :param work: Start working
         """
 
         if fix_name:
             self.data_folder = data_folder
 
             path_original_data = self.work_dir + str(self.data_folder)
-            path_classes = path_original_data + "/classes"
-            path_data_as_csv = path_original_data + "/export_data"
-            path_figures = path_original_data + "/figures"
-            path_import_data = path_original_data + "/import_data"
+            path_classes = path_original_data + "/Classes"
+            path_data_as_csv = path_original_data + "/ExportData"
+            path_figures = path_original_data + "/Figures"
+            path_import_data = path_original_data + "/ImportData"
 
             self.folders = [path_original_data, path_classes,
                             path_data_as_csv, path_figures, path_import_data]
@@ -1955,8 +2198,6 @@ class Interface():
                         raise e
 
         if fix_name and delete:
-            """Deletes the files that are in the subdirectory "data" of the argument directory, 
-            To be used if one wants to start the data reduction again and needs a clean data directory"""
             self._list_data.children[0].options = []
 
             self._list_relative_shift.children[0].options = []
@@ -1993,22 +2234,35 @@ class Interface():
             clear_output = (True)
 
         if not work:
-            for w in self._list_data.children[:-1] + self.tab_tools.children[:-1] + self._list_tab_reduce_method.children[:-1] + self._list_define_fitting_df.children[:-1] + self._list_plot_dataset.children[:-1] + self._list_print_logbook.children[:-1]:
+            for w in self._list_data.children[:-1] + \
+                    self.tab_tools.children[:-1] + \
+                    self._list_tab_reduce_method.children[:-1] + \
+                    self._list_define_fitting_df.children[:-1] + \
+                    self._list_plot_dataset.children[:-1] + \
+                    self._list_print_logbook.children[:-1]:
                 if not w.disabled:
                     w.disabled = True
 
         if work:
-            print("""We now start to manipulate the data.\nFirst, rename each column and select the one we want to use.""")
+            print("""
+                We now start to manipulate the data.
+                \nFirst, rename each column and select the one we want to use.
+                """)
 
             self.data_type = data_type
-            self.file_locations = [p.replace(
-                "\\", "/") for p in sorted(glob.glob(f"{self.folders[0]}/*{self.data_type}"))]
+            self.file_locations = [p.replace("\\", "/")
+                                   for p in sorted(
+                glob.glob(
+                    f"{self.folders[0]}/*{self.data_type}")
+            )]
 
             # Possible issues here
             self.names = [
-                "Dataset_"+f.split("/")[-1].split(".")[0] for f in self.file_locations]
+                "Dataset_"+f.split("/")[-1].split(".")[0]
+                for f in self.file_locations
+            ]
 
-            clear_output = (True)
+            clear_output(True)
 
             def renaming(nb_columns, new_name):
                 ButtonSaveName = Button(
@@ -2031,7 +2285,10 @@ class Interface():
 
                 @ButtonSaveList.on_click
                 def ActionSaveList(selfbutton):
-                    """Apply the renaming to all the files given in entry only if name given for each column and at least one column names energy
+                    """
+                    Apply the renaming to all the files given in entry only if
+                    name given for each column and at least one column names
+                    energy
                     """
                     if all([i is not None for i in self.newnames]):
                         usecol = [i for i, j in enumerate(
@@ -2039,7 +2296,8 @@ class Interface():
                         namae = [j for i, j in enumerate(
                             self.newnames) if j != "notused"]
 
-                        if "\u03BC" in self.newnames or "\u03BC" not in self.newnames and "sample_intensity" in self.newnames and "mesh" in self.newnames:
+                        if "\u03BC" in self.newnames \
+                                or "\u03BC" not in self.newnames and "sample_intensity" in self.newnames and "mesh" in self.newnames:
 
                             try:
                                 if self.data_type == ".xlsx":
@@ -2142,7 +2400,10 @@ class Interface():
                                                 raise e
 
                                     print(
-                                        "All data files have also been corrected for the negative values of the energy and for the possible flipping of values.\n")
+                                        "All data files have also been \
+                                        corrected for the negative values of \
+                                        the energy and for the possible \
+                                        flipping of values.\n")
                                     ButtonSaveNameAllNoInterpol.disabled = True
                                     ButtonSaveNameAllInterpol.disabled = True
 
@@ -2174,7 +2435,11 @@ class Interface():
                                     self._list_plot_dataset.children[0].options = self.class_list
 
                                 def interpolate_data(step_value, interpool_bool):
-                                    """We interpolate the data between the minimum and maximum energy point common to all the datasets with the given step"""
+                                    """
+                                    We interpolate the data between the minimum
+                                    and maximum energy point common to all the
+                                    datasets with the given step
+                                    """
 
                                     if interpool_bool:
                                         Emin, Emax = [], []
@@ -2340,24 +2605,25 @@ class Interface():
 
                                 @ButtonSaveNameAllInterpol.on_click
                                 def ActionSaveNameAllInterpol(selfbutton):
-                                    self._list_interpol = interactive(interpolate_data,
-                                                                      step_value=widgets.FloatSlider(
-                                                                          value=0.05,
-                                                                          min=0.01,
-                                                                          max=0.5,
-                                                                          step=0.01,
-                                                                          description='Step:',
-                                                                          disabled=False,
-                                                                          continuous_update=False,
-                                                                          orientation="horizontal",
-                                                                          readout=True,
-                                                                          readout_format='.2f',
-                                                                          style={'description_width': 'initial'}),
-                                                                      interpool_bool=widgets.Checkbox(
-                                                                          value=False,
-                                                                          description='Fix step',
-                                                                          disabled=False,
-                                                                          style={'description_width': 'initial'}))
+                                    self._list_interpol = interactive(
+                                        interpolate_data,
+                                        step_value=widgets.FloatSlider(
+                                            value=0.05,
+                                            min=0.01,
+                                            max=0.5,
+                                            step=0.01,
+                                            description='Step:',
+                                            disabled=False,
+                                            continuous_update=False,
+                                            orientation="horizontal",
+                                            readout=True,
+                                            readout_format='.2f',
+                                            style={'description_width': 'initial'}),
+                                        interpool_bool=widgets.Checkbox(
+                                            value=False,
+                                            description='Fix step',
+                                            disabled=False,
+                                            style={'description_width': 'initial'}))
                                     self.little_tab_interpol = widgets.VBox([widgets.HBox(
                                         self._list_interpol.children[:2]), self._list_interpol.children[-1]])
                                     display(self.little_tab_interpol)
@@ -2434,25 +2700,32 @@ class Interface():
                 else:
                     self.newnames = [None] * nb_columns_in_data
 
-                _list_work = interactive(renaming,
-                                              nb_columns=widgets.Dropdown(
-                                                  options=list(
-                                                      range(nb_columns_in_data)),
-                                                  value=0,
-                                                  description='Column:',
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}),
-                                              new_name=widgets.Dropdown(
-                                                  options=[
-                                                      ("Select a value", "value"), ("Energy", "Energy"), ("Sample intensity",
-                                                                                                          "sample_intensity"), ("\u03BC", "\u03BC"), ("Mesh", "mesh"),
-                                                      ("Reference shift", "reference_shift"), ("Reference first normalization",
-                                                                                               "reference_first_norm"), ("Not used", "notused"), ("User error", "user_error")
-                                                  ],
-                                                  value="value",
-                                                  description="New name for this column:",
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'}))
+                _list_work = interactive(
+                    renaming,
+                    nb_columns=widgets.Dropdown(
+                        options=list(
+                            range(nb_columns_in_data)),
+                        value=0,
+                        description='Column:',
+                        disabled=False,
+                        style={'description_width': 'initial'}),
+                    new_name=widgets.Dropdown(
+                        options=[
+                            ("Select a value", "value"),
+                            ("Energy", "Energy"),
+                            ("Sample intensity", "sample_intensity"),
+                            ("\u03BC", "\u03BC"),
+                            ("Mesh", "mesh"),
+                            ("Reference shift", "reference_shift"),
+                            ("Reference first normalization",
+                             "reference_first_norm"),
+                            ("Not used", "notused"),
+                            ("User error", "user_error")
+                        ],
+                        value="value",
+                        description="New name for this column:",
+                        disabled=False,
+                        style={'description_width': 'initial'}))
                 little_tab_init = widgets.VBox(
                     [widgets.HBox(_list_work.children[:2]), _list_work.children[-1]])
                 display(little_tab_init)
@@ -2984,9 +3257,16 @@ class Interface():
             print("You need to select at least one Dataset !")
 
     def correction_gas(self, spec_number, df, x, y, gas, d, p):
-        """This function computes the absorbance correction that need to be applied due to the presence of gas in the cell.
-        d is the width of the membrane and p the pressure of the gas.
-        Each gas may be imput as a dictionnary and the sum of the percentage of each gas must be equal to 100."""
+        """
+        This function computes the absorbance correction that need to be
+        applied due to the presence of gas in the cell.
+
+        Each gas may be imput as a dictionnary and the sum of the percentage of
+        each gas must be equal to 100.
+
+        :param d: width of the membrane (unit)
+        :param p: gas pressure (unit)
+        """
         elements, per = [], []
 
         try:
@@ -2994,7 +3274,9 @@ class Interface():
             print("The color is function of the temperature for each Dataset.")
         except:
             print(
-                "No valid logbook entry for the temperature found as [Temp (K)], the T for each Dataset will be set to RT.\nPlease refer to ReadMe.\n")
+                "No valid logbook entry for the temperature found as [Temp (K)],\
+                 the T for each Dataset will be set to RT.\
+                 \nPlease refer to ReadMe.\n")
             T = 273.15 * np.ones(len(spec_number))
 
         try:
@@ -3146,7 +3428,10 @@ class Interface():
             print("You need to select at least one class !")
 
     def correction_membrane(self, spec_number, df, x, y, apply_all):
-        """Apply the method of correction to the membrane, does not depend on the temperature, membrane composition fixed."""
+        """
+        Apply the method of correction to the membrane, does not depend on the
+        temperature, membrane composition fixed.
+        """
 
         try:
             plt.close()
@@ -3218,7 +3503,10 @@ class Interface():
             raise e
 
     def correction_deglitching(self, spec, df, pts, x, y, tipo):
-        """Allows one to delete some to replace glitches in the data by using linear, square or cubic interpolation."""
+        """
+        Allows one to delete some to replace glitches in the data by using
+        linear, square or cubic interpolation.
+        """
         try:
             self.used_datasets = spec
             self.used_df_type = df
@@ -3325,8 +3613,12 @@ class Interface():
                 print(f"Wrong Dataset and column combination !")
 
     def merge_energies(self, spec_number, df, x, y, title, merge_bool):
-        """The output of this function is an excel like file (.csv) that is saved in the subdirectory data. 
-        In this single file, the same column in saved for each Dataset on the same energy range to ease the plotting outside this gui."""
+        """
+        The output of this function is an excel like file (.csv) that is saved
+        in the subdirectory data.
+        In this single file, the same column in saved for each Dataset on the
+        same energy range to ease the plotting outside this gui.
+        """
         if merge_bool and len(spec_number) > 1:
             try:
                 # Create a df that spans the entire energy range and check if filename if valid
@@ -5023,87 +5315,85 @@ class Interface():
                         E0Values = [getattr(self.used_class_list[j], "E0")
                                     for j, C in enumerate(self.used_class_list)]
 
-                        self._list_reduce_splines = interactive(self.reduce_splines,
-                                                                spec=widgets.Dropdown(
-                                                                    options=self.used_class_list,
-                                                                    description='Select the Dataset:',
-                                                                    disabled=False,
-                                                                    style={
-                                                                        'description_width': 'initial'},
-                                                                    layout=Layout(width='60%')),
-                                                                order_pre=widgets.Dropdown(
-                                                                    options=[("Select and order", "value"), ("Victoreen", "victoreen"), (
-                                                                        "0", 0), ("1", 1), ("2", 2), ("3", 3)],
-                                                                    value="value",
-                                                                    description='Order of pre-edge:',
-                                                                    disabled=False,
-                                                                    style={'description_width': 'initial'}),
-                                                                order_pst=widgets.Dropdown(
-                                                                    options=[("Select and order", "value"), ("Victoreen", "victoreen"), (
-                                                                        "0", 0), ("1", 1), ("2", 2), ("3", 3)],
-                                                                    value="value",
-                                                                    description='Order of post-edge:',
-                                                                    disabled=False,
-                                                                    style={'description_width': 'initial'}),
-                                                                s1=widgets.FloatRangeSlider(
-                                                                    min=self.new_energy_column[0],
-                                                                    value=[self.new_energy_column[0], np.round(
-                                                                        self.new_energy_column[0] + 0.33*(self.new_energy_column[-1] - self.new_energy_column[0]), 0)],
-                                                                    max=self.new_energy_column[-1],
-                                                                    step=self.interpol_step,
-                                                                    description='Energy range (eV):',
-                                                                    disabled=False,
-                                                                    continuous_update=False,
-                                                                    orientation="horizontal",
-                                                                    readout=True,
-                                                                    readout_format='.2f',
-                                                                    style={
-                                                                        'description_width': 'initial'},
-                                                                    layout=Layout(width="50%", height='40px')),
-                                                                s2=widgets.FloatRangeSlider(
-                                                                    min=self.new_energy_column[0],
-                                                                    value=[np.round(self.new_energy_column[0] + 0.66*(
-                                                                        self.new_energy_column[-1] - self.new_energy_column[0]), 0), self.new_energy_column[-1]],
-                                                                    max=self.new_energy_column[-1],
-                                                                    step=self.interpol_step,
-                                                                    description='Energy range (eV):',
-                                                                    disabled=False,
-                                                                    continuous_update=False,
-                                                                    orientation="horizontal",
-                                                                    readout=True,
-                                                                    readout_format='.2f',
-                                                                    style={
-                                                                        'description_width': 'initial'},
-                                                                    layout=Layout(width="50%", height='40px')),
-                                                                param_a1=widgets.Text(
-                                                                    value="1000000000",
-                                                                    placeholder='A1 = ',
-                                                                    description='A1:',
-                                                                    disabled=True,
-                                                                    continuous_update=False,
-                                                                    style={'description_width': 'initial'}),
-                                                                param_b1=widgets.Text(
-                                                                    value="1000000000",
-                                                                    placeholder='B1 = ',
-                                                                    description='B1:',
-                                                                    disabled=True,
-                                                                    continuous_update=False,
-                                                                    style={'description_width': 'initial'}),
-                                                                param_a2=widgets.Text(
-                                                                    value="1000000000",
-                                                                    placeholder='A2 = ',
-                                                                    description='A2:',
-                                                                    disabled=True,
-                                                                    continuous_update=False,
-                                                                    style={'description_width': 'initial'}),
-                                                                param_b2=widgets.Text(
-                                                                    value="1000000000",
-                                                                    placeholder='B2 = ',
-                                                                    description='B2:',
-                                                                    disabled=True,
-                                                                    continuous_update=False,
-                                                                    style={'description_width': 'initial'}),
-                                                                y=fixed(y))
+                        self._list_reduce_splines = interactive(
+                            self.reduce_splines,
+                            spec=widgets.Dropdown(
+                                options=self.used_class_list,
+                                description='Select the Dataset:',
+                                disabled=False,
+                                style={'description_width': 'initial'},
+                                layout=Layout(width='60%')),
+                            order_pre=widgets.Dropdown(
+                                options=[("Select and order", "value"), ("Victoreen", "victoreen"), (
+                                    "0", 0), ("1", 1), ("2", 2), ("3", 3)],
+                                value="value",
+                                description='Order of pre-edge:',
+                                disabled=False,
+                                style={'description_width': 'initial'}),
+                            order_pst=widgets.Dropdown(
+                                options=[("Select and order", "value"), ("Victoreen", "victoreen"), (
+                                    "0", 0), ("1", 1), ("2", 2), ("3", 3)],
+                                value="value",
+                                description='Order of post-edge:',
+                                disabled=False,
+                                style={'description_width': 'initial'}),
+                            s1=widgets.FloatRangeSlider(
+                                min=self.new_energy_column[0],
+                                value=[self.new_energy_column[0], np.round(
+                                    self.new_energy_column[0] + 0.33*(self.new_energy_column[-1] - self.new_energy_column[0]), 0)],
+                                max=self.new_energy_column[-1],
+                                step=self.interpol_step,
+                                description='Energy range (eV):',
+                                disabled=False,
+                                continuous_update=False,
+                                orientation="horizontal",
+                                readout=True,
+                                readout_format='.2f',
+                                style={'description_width': 'initial'},
+                                layout=Layout(width="50%", height='40px')),
+                            s2=widgets.FloatRangeSlider(
+                                min=self.new_energy_column[0],
+                                value=[np.round(self.new_energy_column[0] + 0.66*(
+                                    self.new_energy_column[-1] - self.new_energy_column[0]), 0), self.new_energy_column[-1]],
+                                max=self.new_energy_column[-1],
+                                step=self.interpol_step,
+                                description='Energy range (eV):',
+                                disabled=False,
+                                continuous_update=False,
+                                orientation="horizontal",
+                                readout=True,
+                                readout_format='.2f',
+                                style={'description_width': 'initial'},
+                                layout=Layout(width="50%", height='40px')),
+                            param_a1=widgets.Text(
+                                value="1000000000",
+                                placeholder='A1 = ',
+                                description='A1:',
+                                disabled=True,
+                                continuous_update=False,
+                                style={'description_width': 'initial'}),
+                            param_b1=widgets.Text(
+                                value="1000000000",
+                                placeholder='B1 = ',
+                                description='B1:',
+                                disabled=True,
+                                continuous_update=False,
+                                style={'description_width': 'initial'}),
+                            param_a2=widgets.Text(
+                                value="1000000000",
+                                placeholder='A2 = ',
+                                description='A2:',
+                                disabled=True,
+                                continuous_update=False,
+                                style={'description_width': 'initial'}),
+                            param_b2=widgets.Text(
+                                value="1000000000",
+                                placeholder='B2 = ',
+                                description='B2:',
+                                disabled=True,
+                                continuous_update=False,
+                                style={'description_width': 'initial'}),
+                            y=fixed(y))
                         self.widget_list_reduce_splines = widgets.VBox([
                             self._list_reduce_splines.children[0], widgets.HBox(
                                 self._list_reduce_splines.children[1:3]),
@@ -5447,8 +5737,7 @@ class Interface():
             axs[1].set_xlim(energy[number][v1[number]],
                             energy[number][v2[number]])
 
-            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]
-                        :v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
+            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]:v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
 
             print("Channel 1:", v1[number], ";",
                   "energy:", energy[number][v1[number]])
@@ -5828,10 +6117,16 @@ class Interface():
 
                         @ButtonCI.on_click
                         def ActionCI(selfbutton):
-                            """The F-test is used to compare our null model, which is the best fit we have found, with an alternate model,
-                            where one of the parameters is fixed to a specific value. For most models, it is not necessary since the
-                            estimation of the standard error from the estimated covariance matrix is normally quite good. But for some models,
-                            the sum of two exponentials for example, the approximation begins to fail. Then use this method.
+                            """
+                            The F-test is used to compare our null model, which
+                            is the best fit we have found, with an alternate
+                            model, where one of the parameters is fixed to a
+                            specific value. For most models, it is not necessary
+                            since the estimation of the standard error from the
+                            estimated covariance matrix is normally quite good.
+                            But for some models, the sum of two exponentials for
+                            example, the approximation begins to fail.
+                            Then use this method.
                             """
                             try:
                                 # Confidence interval with the standard error from the covariance matrix
@@ -5907,20 +6202,21 @@ class Interface():
                             print("Could not save the class instance with pickle().")
                             raise e
 
-                self._list_parameters_fit = interactive(InitPara,
-                                                        para=widgets.Dropdown(
-                                                            options=self.parameter_names,
-                                                            value=None,
-                                                            description='Select the parameter:',
-                                                            style={'description_width': 'initial'}),
-                                                        column=widgets.Dropdown(
-                                                            options=self.parameter_columns_names,
-                                                            description='Select the column:',
-                                                            style={'description_width': 'initial'}),
-                                                        value=widgets.FloatText(
-                                                            value=0,
-                                                            step=0.01,
-                                                            description='Value :'))
+                self._list_parameters_fit = interactive(
+                    InitPara,
+                    para=widgets.Dropdown(
+                        options=self.parameter_names,
+                        value=None,
+                        description='Select the parameter:',
+                        style={'description_width': 'initial'}),
+                    column=widgets.Dropdown(
+                        options=self.parameter_columns_names,
+                        description='Select the column:',
+                        style={'description_width': 'initial'}),
+                    value=widgets.FloatText(
+                        value=0,
+                        step=0.01,
+                        description='Value :'))
                 self.widget_list_parameters_fit = widgets.VBox([widgets.HBox(
                     self._list_parameters_fit.children[0:3]), self._list_parameters_fit.children[-1]])
                 display(self.widget_list_parameters_fit)
@@ -5940,11 +6236,19 @@ class Interface():
             print("This peak distribution is not yet working, sorry.")
 
     def explore_params(self, i, j, xcol, ycol):
-        """To execute after a fit, allows one to explore the parameter space with the emcee Markov Monte carlo chain. 
-        This method does not actually perform a fit at all. Instead, it explores parameter space to determine the probability
-        distributions for the parameters, but without an explicit goal of attempting to refine the solution.
-        To use this method effectively, you should first use another minimization method and then use this method to explore 
-        the parameter space around thosee best-fit values.
+        """
+        To execute after a fit, allows one to explore the parameter space
+        with the emcee Markov Monte carlo chain.
+
+        This method does not actually perform a fit. Instead, it explores the
+        parameter space to determine the probability distributions for the
+        parameters, but without an explicit goal of attempting to refine the
+        solution.
+
+        To use this method effectively, you should first use another
+        minimization method and then use this method to explore the parameter
+        space around thosee best-fit values.
+
         Check lmfit doc for more informations.
         """
         try:
@@ -6298,93 +6602,93 @@ class Interface():
                     except IndexError:
                         print("Please pick a valid range for the x axis.")
 
-                _list_3D = interactive(three_d_plot,
-                                       xname=widgets.Text(
-                                           value="Energy",
-                                           placeholder="x_axis",
-                                           description='Name of x axis:',
-                                           disabled=False,
-                                           continuous_update=False,
-                                           style={'description_width': 'initial'}),
-                                       yname=widgets.Text(
-                                           value="Temperature",
-                                           placeholder="y_axis",
-                                           description='Name of y axis:',
-                                           disabled=False,
-                                           continuous_update=False,
-                                           style={'description_width': 'initial'}),
-                                       zname=widgets.Text(
-                                           value="normalized EXAFS intensity",
-                                           placeholder="zaxis",
-                                           description='Name of z axis:',
-                                           disabled=False,
-                                           continuous_update=False,
-                                           style={'description_width': 'initial'}),
-                                       title=widgets.Text(
-                                           value="Evolution of edge with temperature",
-                                           placeholder="3D plot",
-                                           description='title:',
-                                           disabled=False,
-                                           continuous_update=False,
-                                           style={'description_width': 'initial'}),
-                                       dist=widgets.IntSlider(
-                                           value=10,
-                                           min=0,
-                                           max=50,
-                                           step=1,
-                                           description='Distance:',
-                                           disabled=False,
-                                           continuous_update=False,
-                                           orientation="horizontal",
-                                           readout=True,
-                                           readout_format="d",
-                                           style={'description_width': 'initial'}),
-                                       elev=widgets.IntSlider(
-                                           value=45,
-                                           min=0,
-                                           max=90,
-                                           step=1,
-                                           description='Elevation:',
-                                           disabled=False,
-                                           continuous_update=False,
-                                           orientation="horizontal",
-                                           readout=True,
-                                           readout_format="d",
-                                           style={'description_width': 'initial'}),
-                                       azim=widgets.IntSlider(
-                                           value=285,
-                                           min=0,
-                                           max=360,
-                                           step=1,
-                                           description='Azimuthal:',
-                                           disabled=False,
-                                           continuous_update=False,
-                                           orientation="horizontal",
-                                           readout=True,
-                                           readout_format="d",
-                                           style={'description_width': 'initial'}),
-                                       cmap_style=widgets.Dropdown(
-                                           options=[("Viridis", plt.cm.viridis), ("Jet", plt.cm.jet), ("Plasma", plt.cm.plasma), (
-                                               "Cividis", plt.cm.cividis), ("Magma", plt.cm.magma), ("Inferno", plt.cm.inferno)],
-                                           description='Select the style:',
-                                           continuous_update=False,
-                                           disabled=False,
-                                           style={'description_width': 'initial'}),
-                                       interval=widgets.FloatRangeSlider(
-                                           min=self.new_energy_column[0],
-                                           value=[self.new_energy_column[-2],
-                                                  self.new_energy_column[-1]],
-                                           max=self.new_energy_column[-1],
-                                           step=self.interpol_step,
-                                           description='Energy range (eV):',
-                                           disabled=False,
-                                           continuous_update=False,
-                                           orientation="horizontal",
-                                           readout=True,
-                                           readout_format='.2f',
-                                           style={
-                                               'description_width': 'initial'},
-                                           layout=Layout(width="50%", height='40px')))
+                _list_3D = interactive(
+                    three_d_plot,
+                    xname=widgets.Text(
+                        value="Energy",
+                        placeholder="x_axis",
+                        description='Name of x axis:',
+                        disabled=False,
+                        continuous_update=False,
+                        style={'description_width': 'initial'}),
+                    yname=widgets.Text(
+                        value="Temperature",
+                        placeholder="y_axis",
+                        description='Name of y axis:',
+                        disabled=False,
+                        continuous_update=False,
+                        style={'description_width': 'initial'}),
+                    zname=widgets.Text(
+                        value="normalized EXAFS intensity",
+                        placeholder="zaxis",
+                        description='Name of z axis:',
+                        disabled=False,
+                        continuous_update=False,
+                        style={'description_width': 'initial'}),
+                    title=widgets.Text(
+                        value="Evolution of edge with temperature",
+                        placeholder="3D plot",
+                        description='title:',
+                        disabled=False,
+                        continuous_update=False,
+                        style={'description_width': 'initial'}),
+                    dist=widgets.IntSlider(
+                        value=10,
+                        min=0,
+                        max=50,
+                        step=1,
+                        description='Distance:',
+                        disabled=False,
+                        continuous_update=False,
+                        orientation="horizontal",
+                        readout=True,
+                        readout_format="d",
+                        style={'description_width': 'initial'}),
+                    elev=widgets.IntSlider(
+                        value=45,
+                        min=0,
+                        max=90,
+                        step=1,
+                        description='Elevation:',
+                        disabled=False,
+                        continuous_update=False,
+                        orientation="horizontal",
+                        readout=True,
+                        readout_format="d",
+                        style={'description_width': 'initial'}),
+                    azim=widgets.IntSlider(
+                        value=285,
+                        min=0,
+                        max=360,
+                        step=1,
+                        description='Azimuthal:',
+                        disabled=False,
+                        continuous_update=False,
+                        orientation="horizontal",
+                        readout=True,
+                        readout_format="d",
+                        style={'description_width': 'initial'}),
+                    cmap_style=widgets.Dropdown(
+                        options=[("Viridis", plt.cm.viridis), ("Jet", plt.cm.jet), ("Plasma", plt.cm.plasma), (
+                            "Cividis", plt.cm.cividis), ("Magma", plt.cm.magma), ("Inferno", plt.cm.inferno)],
+                        description='Select the style:',
+                        continuous_update=False,
+                        disabled=False,
+                        style={'description_width': 'initial'}),
+                    interval=widgets.FloatRangeSlider(
+                        min=self.new_energy_column[0],
+                        value=[self.new_energy_column[-2],
+                               self.new_energy_column[-1]],
+                        max=self.new_energy_column[-1],
+                        step=self.interpol_step,
+                        description='Energy range (eV):',
+                        disabled=False,
+                        continuous_update=False,
+                        orientation="horizontal",
+                        readout=True,
+                        readout_format='.2f',
+                        style={'description_width': 'initial'},
+                        layout=Layout(width="50%", height='40px')))
                 widget_list_3D = widgets.VBox([widgets.HBox(_list_3D.children[:3]), widgets.HBox(
                     _list_3D.children[3:6]), widgets.HBox(_list_3D.children[6:9]), _list_3D.children[-1]])
                 display(widget_list_3D)
