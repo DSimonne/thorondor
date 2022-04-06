@@ -7,6 +7,7 @@ import errno
 import os
 import shutil
 import math
+import h5py
 
 import lmfit
 from lmfit import minimize, Parameters, Parameter
@@ -2185,7 +2186,7 @@ class Interface():
                             path_data_as_csv, path_figures, path_import_data]
 
         if fix_name and create_folders:
-            clear_output = (True)
+            clear_output(True)
 
             for folder in self.folders:
                 if not os.path.exists(folder):
@@ -2231,7 +2232,7 @@ class Interface():
                         print(e)
 
             print("Work has been reset")
-            clear_output = (True)
+            clear_output(True)
 
         if not work:
             for w in self._list_data.children[:-1] + \
@@ -2302,14 +2303,27 @@ class Interface():
                             try:
                                 if self.data_type == ".xlsx":
                                     dataset_renamed = pd.read_excel(
-                                        self.file_locations[0], header=0, names=namae,  usecols=usecol).abs()
+                                        self.file_locations[0],
+                                        header=0,
+                                        names=namae,
+                                        usecols=usecol
+                                    ).abs()
                                 elif self.data_type == ".nxs":
-                                    with tb.open_file(self.file_locations[0], "r") as f_nxs:
-                                        dataset_renamed = pd.DataFrame(
-                                            f_nxs.root.NXentry.NXdata.data[:]).abs()
+                                    dataset_renamed = DiamondDataset(
+                                        self.file_locations[0]).df
+                                    display(df)
+                                    # with tb.open_file(self.file_locations[0], "r") as f_nxs:
+                                    #     dataset_renamed = pd.DataFrame(
+                                    #         f_nxs.root.NXentry.NXdata.data[:]).abs()
                                 else:
                                     dataset_renamed = pd.read_csv(
-                                        self.file_locations[0], sep=delimiter_type, header=0, names=namae,  usecols=usecol, decimal=decimal_separator).abs()
+                                        self.file_locations[0],
+                                        sep=delimiter_type,
+                                        header=0,
+                                        names=namae,
+                                        usecols=usecol,
+                                        decimal=decimal_separator
+                                    ).abs()
 
                                 dataset_renamed = dataset_renamed.sort_values(
                                     "Energy").reset_index(drop=True)
@@ -2340,14 +2354,26 @@ class Interface():
                                         try:
                                             if self.data_type == ".xlsx":
                                                 dataset_renamed = pd.read_excel(
-                                                    f, header=0, names=namae,  usecols=usecol).abs()
+                                                    f,
+                                                    header=0,
+                                                    names=namae,
+                                                    usecols=usecol
+                                                ).abs()
                                             elif self.data_type == ".nxs":
-                                                with tb.open_file(f, "r") as f_nxs:
-                                                    dataset_renamed = pd.DataFrame(
-                                                        f_nxs.root.NXentry.NXdata.data[:]).abs()
+                                                # with tb.open_file(f, "r") as f_nxs:
+                                                #     dataset_renamed = pd.DataFrame(
+                                                #         f_nxs.root.NXentry.NXdata.data[:]).abs()
+                                                dataset_renamed = DiamondDataset(
+                                                    f).df
                                             else:
                                                 dataset_renamed = pd.read_csv(
-                                                    f, sep=delimiter_type, header=0, names=namae,  usecols=usecol, decimal=decimal_separator).abs()
+                                                    f,
+                                                    sep=delimiter_type,
+                                                    header=0,
+                                                    names=namae,
+                                                    usecols=usecol,
+                                                    decimal=decimal_separator
+                                                ).abs()
 
                                             if "\u03BC" not in self.newnames:
                                                 dataset_renamed["\u03BC"] = dataset_renamed["sample_intensity"] / \
@@ -2452,12 +2478,20 @@ class Interface():
                                                     dataset_renamed = pd.read_excel(
                                                         f, header=0, names=namae,  usecols=usecol).abs()
                                                 elif self.data_type == ".nxs":
-                                                    with tb.open_file(f, "r") as f_nxs:
-                                                        dataset_renamed = pd.DataFrame(
-                                                            f_nxs.root.NXentry.NXdata.data[:]).abs()
+                                                    # with tb.open_file(f, "r") as f_nxs:
+                                                    # dataset_renamed = pd.DataFrame(
+                                                    #     f_nxs.root.NXentry.NXdata.data[:]).abs()
+                                                    dataset_renamed = DiamondDataset(
+                                                        f).df
                                                 else:
                                                     dataset_renamed = pd.read_csv(
-                                                        f, sep=delimiter_type, header=0, names=namae,  usecols=usecol, decimal=decimal_separator).abs()
+                                                        f,
+                                                        sep=delimiter_type,
+                                                        header=0,
+                                                        names=namae,
+                                                        usecols=usecol,
+                                                        decimal=decimal_separator
+                                                    ).abs()
 
                                                 if "\u03BC" not in self.newnames:
                                                     dataset_renamed["\u03BC"] = dataset_renamed["sample_intensity"] / \
@@ -2478,7 +2512,13 @@ class Interface():
                                                     other_decimal_separator = "."
 
                                                 dataset_renamed = pd.read_csv(
-                                                    f, sep=delimiter_type, header=0, names=namae,  usecols=usecol, decimal=other_decimal_separator).abs()
+                                                    f,
+                                                    sep=delimiter_type,
+                                                    header=0,
+                                                    names=namae,
+                                                    usecols=usecol,
+                                                    decimal=other_decimal_separator
+                                                ).abs()
 
                                                 if "\u03BC" not in self.newnames:
                                                     dataset_renamed["\u03BC"] = dataset_renamed["sample_intensity"] / \
@@ -2561,7 +2601,12 @@ class Interface():
                                         self._list_interpol.children[0].disabled = True
                                         self._list_interpol.children[1].disabled = True
 
-                                        for w in self._list_data.children[:-1] + self.tab_tools.children[:-1] + self._list_tab_reduce_method.children[:-1] + self._list_define_fitting_df.children[:-1] + self._list_plot_dataset.children[:-1] + self._list_print_logbook.children[:-1]:
+                                        for w in self._list_data.children[:-1] \
+                                        + self.tab_tools.children[:-1] \
+                                        + self._list_tab_reduce_method.children[:-1] \
+                                        + self._list_define_fitting_df.children[:-1] \
+                                        + self._list_plot_dataset.children[:-1] \
+                                        + self._list_print_logbook.children[:-1]:
                                             if w.disabled:
                                                 w.disabled = False
 
@@ -2628,9 +2673,9 @@ class Interface():
                                         self._list_interpol.children[:2]), self._list_interpol.children[-1]])
                                     display(self.little_tab_interpol)
 
-                            except KeyError:
-                                print(
-                                    "At least one column must be named \"energy\"")
+                            # except KeyError:
+                            #     print(
+                            #         "At least one column must be named \"Energy\"")
 
                             except ValueError:
                                 print("Duplicate names are not allowed.")
@@ -2647,9 +2692,10 @@ class Interface():
                     if self.data_type == ".xlsx":
                         df = pd.read_excel(self.file_locations[0]).abs()
                     elif self.data_type == ".nxs":
-                        with tb.open_file(self.file_locations[0], "r") as f_nxs:
-                            df = pd.DataFrame(
-                                f_nxs.root.NXentry.NXdata.data[:]).abs()
+                        # with tb.open_file(self.file_locations[0], "r") as f_nxs:
+                        #     df = pd.DataFrame(
+                        #         f_nxs.root.NXentry.NXdata.data[:]).abs()
+                        df = DiamondDataset(self.file_locations[0]).df
                     else:
                         df = pd.read_csv(
                             self.file_locations[0], sep=delimiter_type, decimal=decimal_separator).abs()
@@ -4034,8 +4080,18 @@ class Interface():
             clear_output(True)
             print("Select at least two references, one Dataset that will serve to visualise the interpolation, and the list of datasets you would like to process.")
 
-    def import_data(self, data_name, data_format, delimiter_type, decimal_separator, energy_shift, scale_factor):
-        "This function is meant to import a simulated spectrum to be used for comparison."
+    def import_data(
+        self,
+        data_name,
+        data_format,
+        delimiter_type,
+        decimal_separator,
+        energy_shift,
+        scale_factor
+    ):
+        """
+        This function is meant to import a simulated spectrum to be used for comparison.
+        """
 
         ButtonShowData = Button(
             description="Show data",
@@ -5737,7 +5793,8 @@ class Interface():
             axs[1].set_xlim(energy[number][v1[number]],
                             energy[number][v2[number]])
 
-            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]:v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
+            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]
+                        :v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
 
             print("Channel 1:", v1[number], ";",
                   "energy:", energy[number][v1[number]])
@@ -7073,3 +7130,50 @@ class Interface():
     def victoreen(self, x, A, B):
         """victoreen function"""
         return A*x**(-3) + B*x**(-4)
+
+class DiamondDataset():
+    """"""
+    def __init__(self, filename):
+        """"""
+        self.filename = filename
+
+        with h5py.File(self.filename) as f:
+            print(filename)
+
+            group_list = list(f["entry1"]["instrument"].keys())
+            sequences = group_list[:-4]
+            print("Sequences recorded:", sequences)
+            if len(sequences) == 1:
+                group = sequences[0]
+
+                # data
+                self.binding_energy = f["entry1"]["instrument"][group]["binding_energy"][:]
+                self.images = f["entry1"]["instrument"][group]["images"][:]
+                self.spectra = f["entry1"]["instrument"][group]["spectra"][:]
+                self.spectrum = f["entry1"]["instrument"][group]["spectrum"][:]
+                self.kinetic_energy = f["entry1"]["instrument"][group]["kinetic_energy"][:]
+
+                # metadata
+                self.count_time = f["entry1"]["instrument"][group]["count_time"][0]
+                self.iterations = f["entry1"]["instrument"][group]["iterations"][0]
+                self.step_energy = f["entry1"]["instrument"][group]["step_energy"][0]
+                self.pass_energy = f["entry1"]["instrument"][group]["pass_energy"][0]
+                self.photon_energy = f["entry1"]["instrument"][group]["photon_energy"][0]
+                self.work_function = f["entry1"]["instrument"][group]["work_function"][0]
+                self.y_scale = f["entry1"]["instrument"][group]["y_scale"][:]
+
+                try:
+                    self.arr = np.array([
+                        self.binding_energy[0, :],
+                        self.kinetic_energy[0, :],
+                        self.spectrum[0, :],
+                    ])
+                    self.df = pd.DataFrame(
+                        self.arr.T, columns=["Energy", "Mesh", "\u03BC"])
+                except:
+                    pass
+            else:
+                print("More than 1 sequence")
+
+    def __repr__(self):
+        return self.filename
