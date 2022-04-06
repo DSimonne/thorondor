@@ -2531,7 +2531,8 @@ class Interface():
                         fig, ax = plt.subplots(1, figsize=(16, 8))
                         ax.set_xlabel("Energy")
                         ax.set_ylabel('NEXAFS')
-                        ax.set_title(f'{self.class_list[dataset_index].filename}')
+                        ax.set_title(
+                            f'{self.class_list[dataset_index].filename}')
                         ax.tick_params(direction='in', labelsize=15, width=2)
 
                         # reference
@@ -2711,7 +2712,8 @@ class Interface():
                     axs[0].plot(used_df[x], used_df[y])
 
                     # Plot after correction
-                    axs[1].plot(used_df[x] + shift, used_df[y], label=C.filename)
+                    axs[1].plot(used_df[x] + shift,
+                                used_df[y], label=C.filename)
 
                 lines, labels = [], []
                 for ax in axs:
@@ -3155,7 +3157,8 @@ class Interface():
                             yvalues = yvalues.append({x: v}, ignore_index=True).sort_values(
                                 by=[x]).reset_index(drop=True)
 
-                    self.merged_values[str(C.filename) + "_" + str(y)] = yvalues[y]
+                    self.merged_values[str(C.filename) +
+                                       "_" + str(y)] = yvalues[y]
 
                     print(f"{j+1} out of {len(spec_number)} datasets processed.\n")
 
@@ -3632,7 +3635,8 @@ class Interface():
 
                         C.fit_df = C.df.copy()
 
-                        class_list_names = [D.filename for D in self.class_list]
+                        class_list_names = [
+                            D.filename for D in self.class_list]
                         if data_name in class_list_names:
                             del self.class_list[class_list_names.index(
                                 data_name)]
@@ -3725,7 +3729,8 @@ class Interface():
 
         except ValueError:
             clear_output(True)
-            print(f"{used_datasets.filename} is not in the list of datasets to reduce.")
+            print(
+                f"{used_datasets.filename} is not in the list of datasets to reduce.")
 
     # Reduction interactive sub-functions
     def reduce_LSF(self, y, interval, lam, p):
@@ -5270,8 +5275,7 @@ class Interface():
             axs[1].set_xlim(energy[number][v1[number]],
                             energy[number][v2[number]])
 
-            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]
-                        :v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
+            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]:v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
 
             print("Channel 1:", v1[number], ";",
                   "energy:", energy[number][v1[number]])
@@ -5905,7 +5909,7 @@ class Interface():
                 v1, v2 = interval
                 try:
                     used_df = getattr(spec_number[0], plot_df)
-                    indices = np.where((used_df[x] > v1) & (used_df[x] <v2))
+                    indices = np.where((used_df[x] > v1) & (used_df[x] < v2))
                     print(indices[0])
 
                     ButtonSavePlot = Button(
@@ -5919,27 +5923,27 @@ class Interface():
                     ax.grid(which='minor', alpha=0.2)
                     ax.grid(which='major', alpha=0.5)
 
-                    ax.set_xlabel(x_axis, fontsize = 15)
-                    ax.set_ylabel(y_axis, fontsize = 15)
-                    ax.set_title(title, fontsize = 20)
+                    ax.set_xlabel(x_axis, fontsize=15)
+                    ax.set_ylabel(y_axis, fontsize=15)
+                    ax.set_title(title, fontsize=20)
 
                     ax.plot(used_df[x][indices[0]], used_df[y][indices[0]],
                             linewidth=1, color=colorplot,
                             label=f"{spec_number[0].filename}")
-                    ax.legend(fontsize = 15)
+                    ax.legend(fontsize=15)
                     plt.show()
 
                     @ButtonSavePlot.on_click
                     def ActionSavePlot(selfbutton):
                         fig, ax = plt.subplots(figsize=(16, 6))
-                        ax.set_xlabel(x_axis, fontsize = 15)
-                        ax.set_ylabel(y_axis, fontsize = 15)
-                        ax.set_title(title, fontsize = 20)
+                        ax.set_xlabel(x_axis, fontsize=15)
+                        ax.set_ylabel(y_axis, fontsize=15)
+                        ax.set_title(title, fontsize=20)
 
                         ax.plot(used_df[x][indices[0]], used_df[y][indices[0]],
                                 linewidth=1, color=colorplot,
                                 label=f"{spec_number[0].filename}")
-                        ax.legend(fontsize = 15)
+                        ax.legend(fontsize=15)
                         plt.tight_layout()
                         plt.savefig(f"{self.folders[3]}/{title}.pdf")
                         plt.savefig(f"{self.folders[3]}/{title}.png")
@@ -5984,7 +5988,7 @@ class Interface():
                     readout_format='.2f',
                     style={'description_width': 'initial'},
                     layout=Layout(width="50%", height='40px'))
-                )
+            )
             def plot_all(interval):
                 v1, v2 = interval
 
@@ -5994,15 +5998,16 @@ class Interface():
                 ax.grid(which='minor', alpha=0.2)
                 ax.grid(which='major', alpha=0.5)
 
-                ax.set_xlabel(x_axis, fontsize = 15)
-                ax.set_ylabel(y_axis, fontsize = 15)
-                ax.set_title(title, fontsize = 20)
+                ax.set_xlabel(x_axis, fontsize=15)
+                ax.set_ylabel(y_axis, fontsize=15)
+                ax.set_title(title, fontsize=20)
 
                 try:
                     for j, C in enumerate(spec_number):
                         try:
                             used_df = getattr(C, plot_df)
-                            indices = np.where((used_df[x] > v1) & (used_df[x] <v2))
+                            indices = np.where(
+                                (used_df[x] > v1) & (used_df[x] < v2))
 
                             if T:
                                 ax.plot(used_df[x][indices[0]], used_df[y][indices[0]], linewidth=1, label=f"{spec_number[j].filename}", color=(
@@ -6016,7 +6021,7 @@ class Interface():
                             pass
                             print(
                                 f"{C.filename} does not have the {plot_df} dataframe associated yet.")
-                    ax.legend(loc='upper center', fontsize = 15, bbox_to_anchor=(
+                    ax.legend(loc='upper center', fontsize=15, bbox_to_anchor=(
                         0.5, -0.2), fancybox=True, shadow=True, ncol=5)
 
                     ButtonSavePlot = Button(
@@ -6028,13 +6033,14 @@ class Interface():
                     def ActionSavePlot(selfbutton):
                         plt.close()
                         fig, ax = plt.subplots(figsize=(16, 6))
-                        ax.set_xlabel(x_axis, fontsize = 15)
-                        ax.set_ylabel(y_axis, fontsize = 15)
-                        ax.set_title(title, fontsize = 20)
+                        ax.set_xlabel(x_axis, fontsize=15)
+                        ax.set_ylabel(y_axis, fontsize=15)
+                        ax.set_title(title, fontsize=20)
 
                         for j, C in enumerate(spec_number):
                             used_df = getattr(C, plot_df)
-                            indices = np.where((used_df[x] > v1) & (used_df[x] <v2))
+                            indices = np.where(
+                                (used_df[x] > v1) & (used_df[x] < v2))
 
                             if T:
                                 ax.plot(used_df[x][indices[0]], used_df[y][indices[0]], linewidth=1, label=f"{spec_number[j].filename}", color=(
@@ -6044,7 +6050,7 @@ class Interface():
                                 ax.plot(used_df[x][indices[0]], used_df[y][indices[0]],
                                         linewidth=1, label=f"{spec_number[j].filename}")
 
-                        ax.legend(loc='upper center', fontsize = 15, bbox_to_anchor=(
+                        ax.legend(loc='upper center', fontsize=15, bbox_to_anchor=(
                             0.5, -0.2), fancybox=True, shadow=True, ncol=5)
                         plt.tight_layout()
                         plt.savefig(f"{self.folders[3]}/{title}.pdf")
@@ -6082,7 +6088,8 @@ class Interface():
                             yvalues = yvalues.append({x: v}, ignore_index=True).sort_values(
                                 by=[x]).reset_index(drop=True)
 
-                    self.merged_values[str(C.filename) + "_"+str(y)] = yvalues[y]
+                    self.merged_values[str(C.filename) +
+                                       "_"+str(y)] = yvalues[y]
 
                 def three_d_plot(xname, yname, zname, dist, elev, azim, cmap_style, title, interval):
                     try:
@@ -6123,7 +6130,7 @@ class Interface():
                         ax.set_xlabel(xname)
                         ax.set_ylabel(yname)
                         ax.set_zlabel(zname)
-                        ax.set_title(title, fontsize = 20)
+                        ax.set_title(title, fontsize=20)
 
                         fig.tight_layout()
                         plt.savefig(f"{self.folders[3]}/{title}.pdf")
