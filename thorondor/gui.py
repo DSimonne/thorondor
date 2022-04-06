@@ -5275,7 +5275,8 @@ class Interface():
             axs[1].set_xlim(energy[number][v1[number]],
                             energy[number][v2[number]])
 
-            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]:v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
+            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]
+                        :v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
 
             print("Channel 1:", v1[number], ";",
                   "energy:", energy[number][v1[number]])
@@ -5390,20 +5391,12 @@ class Interface():
         clear_output(True)
 
         try:
+            v1, v2 = interval
+            indices = np.where((self.used_df_fit[xcol] > v1) & (
+                self.used_df_fit[xcol] < v2))
 
-            # We create the model
-            try:
-                i = int(np.where(self.used_df_fit[xcol] == interval[0])[0])
-            except TypeError:
-                i = 0
-
-            try:
-                j = int(np.where(self.used_df_fit[xcol] == interval[1])[0])
-            except TypeError:
-                j = -1
-
-            y = self.used_df_fit[ycol].values[i:j]
-            x = self.used_df_fit[xcol].values[i:j]
+            y = self.used_df_fit[ycol].values[indices[0]]
+            x = self.used_df_fit[xcol].values[indices[0]]
 
             self.fit_df = pd.DataFrame({
                 xcol: x,
@@ -5640,10 +5633,9 @@ class Interface():
                         axes[0, 1].legend()
                         plt.tight_layout()
 
-                        plt.savefig(
-                            f"{self.folders[3]}/fit_{self.used_datasets.filename}.pdf")
-                        plt.savefig(
-                            f"{self.folders[3]}/fit_{self.used_datasets.filename}.png")
+                        plt.savefig(f"{self.folders[3]}/fit.pdf")
+                        plt.savefig(f"{self.folders[3]}/fit.png")
+                        print(f"Saved image as {self.folders[3]}/fit.pdf")
 
                         ButtonCI = Button(
                             description="Determine confidence Intervals",
@@ -5910,7 +5902,6 @@ class Interface():
                 try:
                     used_df = getattr(spec_number[0], plot_df)
                     indices = np.where((used_df[x] > v1) & (used_df[x] < v2))
-                    print(indices[0])
 
                     ButtonSavePlot = Button(
                         description="Save Plot",
