@@ -18,7 +18,7 @@ class DiamondDataset():
 
     def __init__(self, filename):
         """"""
-        self.filename = filename
+        self.filename = filename.split("/")[-1]
         self.df_names = []
 
         with h5py.File(self.filename) as f:
@@ -26,7 +26,7 @@ class DiamondDataset():
 
             self.group_list = list(f["entry1"]["instrument"].keys())
             self.sequences = self.group_list[:-4]
-            print("Sequences recorded:", self.sequences)
+            print("\tSequences recorded:", self.sequences)
             for seq in self.sequences:
                 self.group = seq
 

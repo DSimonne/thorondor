@@ -30,6 +30,14 @@ import tables as tb
 
 from thorondor.gui_iterable import DiamondDataset
 
+from bokeh.layouts import column
+from bokeh.models import ColumnDataSource, RangeTool, HoverTool
+from bokeh.plotting import figure, show
+from bokeh.io import output_notebook
+from collections import defaultdict
+
+output_notebook()
+
 
 class Interface():
     """
@@ -61,6 +69,11 @@ class Interface():
 
         self.new_energy_column = np.round(np.linspace(-100, 1000, 2001), 2)
         self.interpol_step = 0.05
+
+        self.matplotlib_colours = [
+            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
+            '#e377c2', '#7f7f7f', '#bcbd22',
+            '#17becf']
 
         if class_list:
 
@@ -157,18 +170,11 @@ class Interface():
                 value="df",
                 description='Select the dataframe:',
                 disabled=True,
-                style={'description_width': 'initial'}),
-            show=widgets.Checkbox(
-                value=False,
-                description='Show dataframe',
-                disabled=True,
                 style={'description_width': 'initial'}))
-        self._list_data.children[2].observe(
-            self.show_data_handler, names="value")
 
         self.tab_data = widgets.VBox([
             self._list_data.children[0],
-            widgets.HBox(self._list_data.children[1:3]),
+            self._list_data.children[1],
             self._list_data.children[-1]
         ])
 
@@ -177,18 +183,18 @@ class Interface():
             self.treat_data,
             method=widgets.ToggleButtons(
                 options=[
-                    ("Flip", "flip"),
+                    # ("Flip", "flip"),
                     ("Stable Monitor Norm.", "stable_monitor"),
                     ("Relative shifts correction", "relative_shift"),
                     ("Global shift correction", "global_shift"),
-                    ("Gas correction", "gas"),
-                    ("Membrane correction", "membrane"),
+                    # ("Gas correction", "gas"),
+                    # ("Membrane correction", "membrane"),
                     ("Deglitching", "deglitching"),
                     ("Merge energies", "merge"),
                     ("Determine errors", "errors"),
-                    ("Import data", "import"),
+                    # ("Import data", "import"),
                     ("Linear Combination Fit", "LCF"),
-                    ("Save as .nxs (NeXuS)", "nexus"),
+                    # ("Save as .nxs (NeXuS)", "nexus"),
                 ],
                 value="relative_shift",
                 description='Tools:',
@@ -238,7 +244,7 @@ class Interface():
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="binding_energy",
+                value="kinetic_energy",
                 description='Pick an x-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
@@ -357,7 +363,7 @@ class Interface():
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="binding_energy",
+                value="kinetic_energy",
                 description='Pick an x-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
@@ -420,7 +426,7 @@ class Interface():
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="binding_energy",
+                value="kinetic_energy",
                 description='Pick an x-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
@@ -486,7 +492,7 @@ class Interface():
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="binding_energy",
+                value="kinetic_energy",
                 description='Pick an x-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
@@ -558,7 +564,7 @@ class Interface():
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="binding_energy",
+                value="kinetic_energy",
                 description='Pick an x-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
@@ -626,7 +632,7 @@ class Interface():
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="binding_energy",
+                value="kinetic_energy",
                 description='Pick an x-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
@@ -693,7 +699,7 @@ class Interface():
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="binding_energy",
+                value="kinetic_energy",
                 description='Pick an x-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
@@ -765,7 +771,7 @@ class Interface():
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="binding_energy",
+                value="kinetic_energy",
                 description='Pick an x-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
@@ -866,7 +872,7 @@ class Interface():
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="binding_energy",
+                value="kinetic_energy",
                 description='Pick an x-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
@@ -1417,7 +1423,7 @@ class Interface():
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="binding_energy",
+                value="kinetic_energy",
                 description='Pick an x-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
@@ -1585,7 +1591,7 @@ class Interface():
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="binding_energy",
+                value="kinetic_energy",
                 description='Pick an x-axis',
                 disabled=True,
                 style={'description_width': 'initial'}),
@@ -1610,7 +1616,7 @@ class Interface():
                 disabled=True,
                 style={'description_width': 'initial'}),
             x_axis=widgets.Text(
-                value="Binding energy",
+                value="Energy",
                 placeholder="Energy",
                 description='Type the name of the x axis:',
                 disabled=True,
@@ -2207,7 +2213,7 @@ class Interface():
                     except Exception as e:
                         raise e
 
-                self.df_names = list(set(self.df_names))
+                self.df_names = sorted(list(set(self.df_names)))
                 ButtonSaveData.disabled = True
 
                 for w in self._list_data.children[:-1] + self.tab_tools.children[:-1] + self._list_tab_reduce_method.children[:-1] + self._list_define_fitting_df.children[:-1] + self._list_plot_dataset.children[:-1] + self._list_print_logbook.children[:-1]:
@@ -2256,7 +2262,7 @@ class Interface():
 
     # Visualization interactive function
 
-    def print_data(self, spec, printed_df, show):
+    def print_data(self, spec, printed_df):
         """
         Displays the pandas.DataFrame associated to each Dataset,
         there are currently 4 different possibilities:
@@ -2269,16 +2275,12 @@ class Interface():
         Each data frame is automatically saved as a .csv file after creation.
         """
 
-        if not show:
-            print("Window cleared")
+        try:
+            used_df = getattr(spec, printed_df)
+            display(used_df)
+        except AttributeError:
             clear_output(True)
-
-        elif show:
-            try:
-                used_df = getattr(spec, printed_df)
-                display(used_df)
-            except AttributeError:
-                print(f"Wrong Dataset and column combination !")
+            print(f"Wrong Dataset and column combination !")
 
     # Tools global interactive function
 
@@ -5275,8 +5277,7 @@ class Interface():
             axs[1].set_xlim(energy[number][v1[number]],
                             energy[number][v2[number]])
 
-            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]
-                        :v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
+            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]:v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
 
             print("Channel 1:", v1[number], ";",
                   "energy:", energy[number][v1[number]])
@@ -5461,15 +5462,16 @@ class Interface():
                     def ActionRetrievePara(selfbutton):
                         clear_output(True)
                         plt.close()
-                        display(widgets.HBox(
-                            (ButtonRetrievePara, ButtonSavePara, ButtonGuess, ButtonFit, ButtonSaveModel)))
+                        # display(widgets.HBox(
+                        #     (ButtonRetrievePara, ButtonSavePara, ButtonGuess, ButtonFit, ButtonSaveModel)))
 
                         try:
                             self.result = getattr(self.used_datasets, "result")
                             self.pars = getattr(self.result, "params")
                             print(
-                                "Previously saved parameters loaded, press see current guess to see current guess.")
+                                "Previously saved parameters loaded.")
 
+                            ButtonGuess.click()
                         except:
                             print("Could not load any parameters.")
 
@@ -5477,8 +5479,8 @@ class Interface():
                     def ActionSavePara(selfbutton):
                         clear_output(True)
                         plt.close()
-                        display(widgets.HBox(
-                            (ButtonRetrievePara, ButtonSavePara, ButtonGuess, ButtonFit, ButtonSaveModel)))
+                        # display(widgets.HBox(
+                        #     (ButtonRetrievePara, ButtonSavePara, ButtonGuess, ButtonFit, ButtonSaveModel)))
                         try:
                             if column == "value":
                                 self.pars[f"{para}"].set(value=value)
@@ -5487,7 +5489,8 @@ class Interface():
                             if column == "max":
                                 self.pars[f"{para}"].set(max=value)
 
-                            display(self.pars)
+                            # display(self.pars)
+                            ButtonGuess.click()
                         except Exception as e:
                             raise e
 
@@ -5504,6 +5507,7 @@ class Interface():
                             self.init = self.mod.eval(self.pars, x=x)
 
                             fig, ax = plt.subplots(figsize=(16, 6))
+                            ax.grid()
                             ax.plot(x, y, label="Data")
                             ax.plot(x, self.init, label='Current guess')
                             ax.legend()
@@ -5875,184 +5879,157 @@ class Interface():
             print("No plotting.")
 
         elif check_plot == "Plot" and len(spec_number) == 1:
-            @interact(
-                interval=widgets.FloatRangeSlider(
-                    min=self.new_energy_column[0],
-                    value=[self.new_energy_column[0],
-                           self.new_energy_column[-1]
-                           ],
-                    max=self.new_energy_column[-1],
-                    step=self.interpol_step,
-                    description='Energy range (eV):',
-                    disabled=False,
-                    continuous_update=False,
-                    orientation="horizontal",
-                    readout=True,
-                    readout_format='.2f',
-                    style={'description_width': 'initial'},
-                    layout=Layout(width="50%", height='40px')),
-                colorplot=widgets.ColorPicker(
-                    concise=False,
-                    description='Pick a color',
-                    value='Blue',
-                    disabled=False,
-                    style={'description_width': 'initial'}))
-            def plot_one(interval, colorplot):
-                v1, v2 = interval
-                try:
-                    used_df = getattr(spec_number[0], plot_df)
-                    indices = np.where((used_df[x] > v1) & (used_df[x] < v2))
+            # Bokeh plot
+            try:
+                # Add line
+                df = getattr(spec_number[0], plot_df)
+                iterations = getattr(
+                    spec_number[0], plot_df[:-3] + "_iterations")
 
-                    ButtonSavePlot = Button(
-                        description="Save Plot",
-                        layout=Layout(width='15%', height='35px'))
-                    display(ButtonSavePlot)
+                source = ColumnDataSource(
+                    data=dict(
+                        x=df[x],
+                        y=df[y]/iterations
+                    ))
 
-                    plt.close()
+                # Create figure
+                TOOLTIPS = [
+                    (f"{x_axis} (eV), {y_axis}", "($x, $y)"),
+                    ("index", "$index"),
+                ]
 
-                    fig, ax = plt.subplots(figsize=(16, 6))
-                    ax.grid(which='minor', alpha=0.2)
-                    ax.grid(which='major', alpha=0.5)
+                p = figure(
+                    height=400, width=800,
+                    tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
+                    toolbar_location="above",
+                    tooltips=TOOLTIPS,
+                    x_axis_location="above",
+                    title=title,
+                    x_range=(df[x].values[0], df[x].values[-1]),
+                )
 
-                    ax.set_xlabel(x_axis, fontsize=15)
-                    ax.set_ylabel(y_axis, fontsize=15)
-                    ax.set_title(title, fontsize=20)
+                p.line("x", "y", source=source,
+                       legend_label=spec_number[0].filename.split("/")[-1])
+                p.yaxis.axis_label = y_axis
+                p.xaxis.axis_label = x_axis + "(eV)"
 
-                    ax.plot(used_df[x][indices[0]], used_df[y][indices[0]],
-                            linewidth=1, color=colorplot,
-                            label=f"{spec_number[0].filename}")
-                    ax.legend(fontsize=15)
-                    plt.show()
+                # Create second figure
+                select = figure(
+                    title="Select range here", height=150, width=800,
+                    toolbar_location=None,
+                    x_range=(df[x].values[0], df[x].values[-1]),
+                )
 
-                    @ButtonSavePlot.on_click
-                    def ActionSavePlot(selfbutton):
-                        fig, ax = plt.subplots(figsize=(16, 6))
-                        ax.set_xlabel(x_axis, fontsize=15)
-                        ax.set_ylabel(y_axis, fontsize=15)
-                        ax.set_title(title, fontsize=20)
+                # Create range tool
+                range_tool = RangeTool(x_range=p.x_range)
+                range_tool.overlay.fill_color = "navy"
+                range_tool.overlay.fill_alpha = 0.2
+                select.add_tools(range_tool)
+                select.toolbar.active_multi = range_tool
+                select.yaxis.axis_label = y_axis
+                select.xaxis.axis_label = x_axis + "(eV)"
 
-                        ax.plot(used_df[x][indices[0]], used_df[y][indices[0]],
-                                linewidth=1, color=colorplot,
-                                label=f"{spec_number[0].filename}")
-                        ax.legend(fontsize=15)
-                        plt.tight_layout()
-                        plt.savefig(f"{self.folders[3]}/{title}.pdf")
-                        plt.savefig(f"{self.folders[3]}/{title}.png")
-                        print(f"Figure {title} saved !")
-                        plt.close()
+                # Add line
+                select.line("x", "y", source=source)
 
-                except AttributeError:
-                    plt.close()
-                    print(
-                        f"{spec_number[0].filename} does not have the {plot_df} dataframe associated yet.")
-                except IndexError:
-                    plt.close()
-                    print(f"Please select at least one spectra.")
-                # except KeyError:
-                #     plt.close()
-                #     print(
-                #         f"The {plot_df} dataframe does not have such attributes.")
+                # Show figure
+                show(column(p, select))
+
+            except AttributeError:
+                plt.close()
+                print(
+                    f"{spec_number[0].filename} \
+                    \ndoes not have the {plot_df} dataframe associated yet.")
 
         elif check_plot == "Plot" and len(spec_number) > 1:
-            try:
-                T = [int(C.logbook_entry["Temp (K)"]) for C in spec_number]
-                print("The color is function of the temperature for each Dataset.")
-            except:
-                print(
-                    "No valid logbook entry for the temperature found as [Temp (K)], the color of the plots will be random.")
-                T = False
 
-            @interact(
-                interval=widgets.FloatRangeSlider(
-                    min=self.new_energy_column[0],
-                    value=[
-                        self.new_energy_column[0],
-                        self.new_energy_column[-1]
-                    ],
-                    max=self.new_energy_column[-1],
-                    step=self.interpol_step,
-                    description='Energy range (eV):',
-                    disabled=False,
-                    continuous_update=False,
-                    orientation="horizontal",
-                    readout=True,
-                    readout_format='.2f',
-                    style={'description_width': 'initial'},
-                    layout=Layout(width="50%", height='40px'))
-            )
-            def plot_all(interval):
-                v1, v2 = interval
+            # Create source for Bokeh
+            source = defaultdict(list)
 
-                plt.close()
-                fig, ax = plt.subplots(figsize=(16, 6))
+            # Count number of scans with good df
+            nb_color = 0
 
-                ax.grid(which='minor', alpha=0.2)
-                ax.grid(which='major', alpha=0.5)
-
-                ax.set_xlabel(x_axis, fontsize=15)
-                ax.set_ylabel(y_axis, fontsize=15)
-                ax.set_title(title, fontsize=20)
-
+            # Iterate on class list
+            for j, C in enumerate(spec_number):
                 try:
-                    for j, C in enumerate(spec_number):
-                        try:
-                            used_df = getattr(C, plot_df)
-                            indices = np.where(
-                                (used_df[x] > v1) & (used_df[x] < v2))
+                    df = getattr(C, plot_df)
 
-                            if T:
-                                ax.plot(used_df[x][indices[0]], used_df[y][indices[0]], linewidth=1, label=f"{spec_number[j].filename}", color=(
-                                    (T[j]-273.15)/(max(T)-273.15), 0, ((max(T)-273.15)-(T[j]-273.15))/(max(T)-273.15)))
+                    # Divide by nb of iterations
+                    iterations = getattr(C, plot_df[:-3] + "_iterations")
 
-                            if not T:
-                                ax.plot(used_df[x][indices[0]], used_df[y][indices[0]],
-                                        linewidth=1, label=f"{spec_number[j].filename}")
+                    source["x"].append(df[x])
+                    source["y"].append(df[y]/iterations)
+                    source["E_ph"].append(
+                        getattr(C, plot_df[:-3] + "_photon_energy"))
+                    source["Pass_energy"].append(
+                        getattr(C, plot_df[:-3] + "_pass_energy"))
+                    source["filename"].append(C.filename.split("/")[-1])
+                    source["color"].append(
+                        self.matplotlib_colours[nb_color % len(self.matplotlib_colours)])
 
-                        except AttributeError:
-                            pass
-                            print(
-                                f"{C.filename} does not have the {plot_df} dataframe associated yet.")
-                    ax.legend(loc='upper center', fontsize=15, bbox_to_anchor=(
-                        0.5, -0.2), fancybox=True, shadow=True, ncol=5)
-
-                    ButtonSavePlot = Button(
-                        description="Save Plot",
-                        layout=Layout(width='15%', height='35px'))
-                    display(ButtonSavePlot)
-
-                    @ButtonSavePlot.on_click
-                    def ActionSavePlot(selfbutton):
-                        plt.close()
-                        fig, ax = plt.subplots(figsize=(16, 6))
-                        ax.set_xlabel(x_axis, fontsize=15)
-                        ax.set_ylabel(y_axis, fontsize=15)
-                        ax.set_title(title, fontsize=20)
-
-                        for j, C in enumerate(spec_number):
-                            used_df = getattr(C, plot_df)
-                            indices = np.where(
-                                (used_df[x] > v1) & (used_df[x] < v2))
-
-                            if T:
-                                ax.plot(used_df[x][indices[0]], used_df[y][indices[0]], linewidth=1, label=f"{spec_number[j].filename}", color=(
-                                    (T[j]-273.15)/(max(T)-273.15), 0, ((max(T)-273.15)-(T[j]-273.15))/(max(T)-273.15)))
-
-                            if not T:
-                                ax.plot(used_df[x][indices[0]], used_df[y][indices[0]],
-                                        linewidth=1, label=f"{spec_number[j].filename}")
-
-                        ax.legend(loc='upper center', fontsize=15, bbox_to_anchor=(
-                            0.5, -0.2), fancybox=True, shadow=True, ncol=5)
-                        plt.tight_layout()
-                        plt.savefig(f"{self.folders[3]}/{title}.pdf")
-                        plt.savefig(f"{self.folders[3]}/{title}.png")
-                        print(f"Figure {title} saved !")
-                        plt.close()
-
-                except KeyError:
-                    plt.close()
+                    nb_color += 1
+                except AttributeError:
+                    pass
                     print(
                         f"The {plot_df} dataframe does not have such attributes.")
+
+            if nb_color == 0:
+                raise AttributeError(
+                    "None of these files have this df as attribute.")
+
+            source = ColumnDataSource(source)
+
+            # Create figure
+            TOOLTIPS = [
+                ("x, y", "($x, $y)"),
+                ('Photon energy', '@E_ph'),
+                ('Pass energy', '@Pass_energy')
+            ]
+
+            p = figure(
+                height=400, width=800,
+                tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
+                toolbar_location="above",
+                tooltips=TOOLTIPS,
+                x_axis_location="above",
+                title=title,
+                x_range=(df[x].values[0], df[x].values[-1]),
+            )
+            p.yaxis.axis_label = y_axis
+            p.xaxis.axis_label = x_axis
+
+            # Create second figure
+            select = figure(
+                title="Select range here", height=150, width=800,
+                toolbar_location=None,
+            )
+
+            # Create range tool
+            range_tool = RangeTool(
+                x_range=p.x_range
+            )
+            range_tool.overlay.fill_color = "navy"
+            range_tool.overlay.fill_alpha = 0.2
+            select.add_tools(range_tool)
+            select.toolbar.active_multi = range_tool
+
+            # Add multilines on both figures
+            p.multi_line(
+                xs='x', ys='y', legend_group='filename',
+                line_width=1, line_color='color', line_alpha=0.6,
+                hover_line_color='color', hover_line_alpha=1.0,
+                source=source,
+            )
+
+            select.multi_line(
+                xs='x', ys='y',
+                line_width=1, line_color='color', line_alpha=0.6,
+                hover_line_color='color', hover_line_alpha=1.0,
+                source=source,
+            )
+
+            # Show figure
+            show(column(p, select))
 
         elif check_plot == "3D" and len(spec_number) > 1:
             print("Please pick a valid range for the x axis.")
@@ -6410,18 +6387,6 @@ class Interface():
             for w in self._list_widgets_init.children[1:5]:
                 w.disabled = False
             self._list_widgets_init.children[-3].disabled = False
-
-    def show_data_handler(self, change):
-        """
-        Handles changes on the widget used to decide whether or not we start
-        the reduction in the visualization tab.
-        """
-        if change.new:
-            self._list_data.children[0].disabled = True
-            self._list_data.children[1].disabled = True
-        elif not change.new:
-            self._list_data.children[0].disabled = False
-            self._list_data.children[1].disabled = False
 
     def relative_shift_bool_handler(self, change):
         if change.new:
