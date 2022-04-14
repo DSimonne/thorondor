@@ -1,18 +1,17 @@
 import numpy as np
 import pandas as pd
-import matplotlib
 import matplotlib.pyplot as plt
 import glob
-import errno
 import os
 import shutil
 import math
+import pickle
+import tables as tb
 
 import lmfit
 from lmfit import minimize, Parameters, Parameter
 from lmfit.models import *
 import corner
-from scipy.stats import chisquare
 
 import ipywidgets as widgets
 from ipywidgets import interact, Button, Layout, interactive, fixed
@@ -20,12 +19,9 @@ from IPython.display import display, Markdown, Latex, clear_output
 
 from scipy import interpolate, optimize, sparse
 from scipy.signal import savgol_filter
+from scipy.stats import chisquare
 
 from datetime import datetime
-import pickle
-import inspect
-
-import tables as tb
 
 from thorondor.gui_iterable import DiamondDataset
 
@@ -34,7 +30,6 @@ from bokeh.models import ColumnDataSource, RangeTool, HoverTool
 from bokeh.plotting import figure, show
 from bokeh.io import output_notebook, export_png
 from collections import defaultdict
-
 output_notebook()
 
 
@@ -62,11 +57,10 @@ class Interface():
         whether or not a class_list is given in entry.
         """
 
-        self.path_elements = inspect.getfile(np).split(
-            "__")[0].split("numpy")[0] + "thorondor/Elements/"
-
         self.new_energy_column = np.round(np.linspace(-100, 1000, 2001), 2)
         self.interpol_step = 0.05
+
+        # Filtering base parameter
         self.filter_window = 21
         self.filter_poly_order = 3
 
@@ -75,31 +69,7 @@ class Interface():
             '#e377c2', '#7f7f7f', '#bcbd22',
             '#17becf']
 
-        if class_list:
-
-            self.class_list = class_list
-            self.data_folder = class_list[0].saving_directory.split(
-                "/Classes")[0].split("/")[-1]
-
-            path_classes = self.data_folder + "/Classes/"
-            path_data_as_csv = self.data_folder + "/ExportData/"
-            path_figures = self.data_folder + "/Figures/"
-
-            self.folders = [self.data_folder, path_classes,
-                            path_data_as_csv, path_figures]
-
-            path_to_classes = [
-                p.replace("\\", "/") for p in sorted(
-                    glob.glob(path_classes+"/*.pickle")
-                )
-            ]
-            self.filenames = [
-                "Dataset_"+f.split("/")[-1].split(".")[0]
-                for f in path_to_classes
-            ]
-
-        elif not class_list:
-            self.class_list = []
+        self.class_list = []
 
         # Subdirectories
         directories = []
@@ -121,46 +91,29 @@ class Interface():
                 continuous_update=False,
                 layout=Layout(width='90%'),
                 style={'description_width': 'initial'}),
-            fix_name=widgets.Checkbox(
-                value=False,
-                description='Fix the name of the folder.',
+            tool=widgets.ToggleButtons(
+                options=[
+                    ("Neutral", "default"),
+                    ("Start working", "work"),
+                    ("Reload data", "reload"),
+                    ("Delete all data", "delete"),
+                ],
+                value="default",
+                description="Options",
                 disabled=False,
-                style={'description_width': 'initial'}),
-            create_folders=widgets.Checkbox(
-                value=False,
-                description='Create/check subdirectories for the program.',
-                disabled=True,
-                style={'description_width': 'initial'},
-                layout=Layout(width="70%")),
-            delete=widgets.Checkbox(
-                value=False,
-                description='Delete all data and reset work !',
-                disabled=True,
-                style={'description_width': 'initial'}),
-            work=widgets.Checkbox(
-                value=False,
-                description='Start working !',
-                disabled=True,
+                button_style="",
                 style={'description_width': 'initial'}))
-
         self._list_widgets_init.children[1].observe(
-            self.filename_handler, names="value")
-        self._list_widgets_init.children[2].observe(
-            self.create_handler, names="value")
-        self._list_widgets_init.children[3].observe(
-            self.delete_handler, names="value")
-        self._list_widgets_init.children[4].observe(
-            self.work_handler, names="value")
+            self.tool_handler, names="value")
 
         self.tab_init = widgets.VBox([
-            widgets.HBox(self._list_widgets_init.children[:2]),
-            self._list_widgets_init.children[2],
-            widgets.HBox(self._list_widgets_init.children[3:5]),
+            self._list_widgets_init.children[0],
+            self._list_widgets_init.children[1],
             self._list_widgets_init.children[-1]
         ])
 
         # Widgets for the data visualisation
-        self._list_data = interactive(
+        self.tab_data = interactive(
             self.print_data,
             spec=widgets.Dropdown(
                 options=self.class_list,
@@ -181,19 +134,11 @@ class Interface():
                 disabled=True,
                 style={'description_width': 'initial'}))
 
-        self.tab_data = widgets.VBox([
-            self._list_data.children[0],
-            self._list_data.children[1],
-            self._list_data.children[-1]
-        ])
-
         # Widgets for the tools
         self.tab_tools = interactive(
             self.treat_data,
             method=widgets.ToggleButtons(
                 options=[
-                    # ("Flip", "flip"),
-                    ("Stable Monitor Norm.", "stable_monitor"),
                     ("Shift correction", "shift"),
                     ("Normalize", "norm"),
                     ("Deglitching", "deglitching"),
@@ -213,122 +158,6 @@ class Interface():
                 style={'description_width': 'initial'}))
         self.tab_tools.children[1].observe(
             self.tools_bool_handler, names="value")
-
-        self._list_flip = interactive(
-            self.flip_axis,
-            spec_number=widgets.SelectMultiple(
-                options=self.class_list,
-                value=self.class_list[0:1],
-                rows=5,
-                description='Spectra to correct:',
-                disabled=False,
-                style={'description_width': 'initial'},
-                layout=Layout(display="flex", flex_flow='column')),
-            df=widgets.Dropdown(
-                options=[
-                    ("Renamed data", "df"),
-                    ("Shifted data", "shifted_df"),
-                    ("Reduced data", "reduced_df"),
-                    ("Reduced by Splines", "reduced_df_splines")
-                ],
-                value="df",
-                description='Use the dataframe:',
-                disabled=False,
-                style={'description_width': 'initial'}),
-            x=widgets.Dropdown(
-                options=[
-                    ("Binding energy", "binding_energy"),
-                    ("Kinetic energy", "kinetic_energy")
-                ],
-                value="kinetic_energy",
-                description='Pick an x-axis',
-                disabled=False,
-                style={'description_width': 'initial'}),
-            y=widgets.Dropdown(
-                options=[
-                    ("Select a value", "value"),
-                    ("Intensity", "intensity"),
-                    ("Reference shift", "reference_shift"),
-                    ("First normalized \u03BC", "first_normalized_\u03BC"),
-                    ("Background corrected", "background_corrected"),
-                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
-                    ("Fit", "fit"),
-                    ("Weights", "weights"),
-                    ("RMS", "RMS"),
-                    ("User error", "user_error")
-                ],
-                value="intensity",
-                description='Pick an y-axis',
-                disabled=False,
-                style={'description_width': 'initial'}),
-            shift=widgets.FloatText(
-                step=0.1,
-                value=1,
-                description='Shift (a. u.):',
-                disabled=False,
-                style={'description_width': 'initial'}))
-        self.widget_list_flip = widgets.VBox([
-            self._list_flip.children[0],
-            widgets.HBox(self._list_flip.children[1:4]),
-            self._list_flip.children[-2],
-            self._list_flip.children[-1]
-        ])
-
-        self._list_stable_monitor = interactive(
-            self.stable_monitor_method,
-            spec_number=widgets.SelectMultiple(
-                options=self.class_list,
-                value=self.class_list[0:1],
-                rows=5,
-                description='Spectra to correct:',
-                disabled=False,
-                style={'description_width': 'initial'},
-                layout=Layout(display="flex", flex_flow='column')),
-            df=widgets.Dropdown(
-                options=[
-                    ("Renamed data", "df"),
-                    ("Shifted data", "shifted_df"),
-                    ("Reduced data", "reduced_df"),
-                    ("Reduced by Splines", "reduced_df_splines")
-                ],
-                value="df",
-                description='Use the dataframe:',
-                disabled=False,
-                style={'description_width': 'initial'}),
-            sample_intensity=widgets.Dropdown(
-                options=[
-                    ("Select a value", "value"),
-                    ("Sample intensity", "intensity"),
-                ],
-                value="intensity",
-                description='Select the sample data',
-                disabled=False,
-                style={'description_width': 'initial'},
-                layout=Layout(width="50%")),
-            reference_intensity=widgets.Dropdown(
-                options=[
-                    ("Select a value", "value"),
-                    ("Reference first normalization", "reference_first_norm"),
-                    ("Reference shift", "reference_shift")
-                ],
-                value="value",
-                description='Select the reference.',
-                disabled=False,
-                style={'description_width': 'initial'},
-                layout=Layout(width="50%")),
-            compute=widgets.Checkbox(
-                value=False,
-                description='Compute ratio sample int./ref. int.',
-                disabled=False,
-                style={'description_width': 'initial'},
-                layout=Layout(width="80%")),)
-        self.widget_list_stable_monitor = widgets.VBox([
-            self._list_stable_monitor.children[0],
-            self._list_stable_monitor.children[1],
-            widgets.HBox(self._list_stable_monitor.children[2:4]),
-            self._list_stable_monitor.children[-2],
-            self._list_stable_monitor.children[-1]
-        ])
 
         self._list_shift = interactive(
             self.energy_shift,
@@ -416,7 +245,7 @@ class Interface():
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="kinetic_energy",
+                value="binding_energy",
                 description='Pick an x-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
@@ -474,16 +303,16 @@ class Interface():
                 disabled=False,
                 style={'description_width': 'initial'},
                 layout=Layout(width="60%")),
-            xcol=widgets.Dropdown(
+            x_axis=widgets.Dropdown(
                 options=[
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="kinetic_energy",
+                value="binding_energy",
                 description='Pick an x-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
-            ycol=widgets.Dropdown(
+            y_axis=widgets.Dropdown(
                 options=[
                     ("Select a value", "value"),
                     ("Intensity", "intensity"),
@@ -577,7 +406,7 @@ class Interface():
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="kinetic_energy",
+                value="binding_energy",
                 description='Pick an x-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
@@ -618,7 +447,7 @@ class Interface():
                 disabled=False,
                 style={'description_width': 'initial'},
                 layout=Layout(display="flex", flex_flow='column')),
-            apply_all=widgets.Checkbox(
+            save_bool=widgets.Checkbox(
                 value=False,
                 description='Save',
                 disabled=False,
@@ -1099,16 +928,16 @@ class Interface():
 
         self._list_define_model = interactive(
             self.define_model,
-            xcol=widgets.Dropdown(
+            x_axis=widgets.Dropdown(
                 options=[
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="kinetic_energy",
+                value="binding_energy",
                 description='Pick an x-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
-            ycol=widgets.Dropdown(
+            y_axis=widgets.Dropdown(
                 options=[
                     ("Select a value", "value"),
                     ("Intensity", "intensity"),
@@ -1159,7 +988,7 @@ class Interface():
                     ("Exponential-Gaussian", ExponentialGaussianModel),
                     ("Skewed-Gaussian", SkewedGaussianModel),
                     ("Skewed-Voigt", SkewedVoigtModel),
-                    ("Donaich", DonaichModel)
+                    ("Donaich", DoniachModel)
                 ],
                 value=LorentzianModel,
                 description='Peak distribution:',
@@ -1269,7 +1098,7 @@ class Interface():
                     ("Binding energy", "binding_energy"),
                     ("Kinetic energy", "kinetic_energy")
                 ],
-                value="kinetic_energy",
+                value="binding_energy",
                 description='Pick an x-axis',
                 disabled=True,
                 style={'description_width': 'initial'}),
@@ -1312,7 +1141,7 @@ class Interface():
                 continuous_update=False,
                 style={'description_width': 'initial'}),
             check_plot=widgets.ToggleButtons(
-                options=[('Clear', "Zero"), ('Plot', "Plot"), ("3D", "3D")],
+                options=[('Clear', "Zero"), ('Plot', "Plot")],
                 value="Zero",
                 description='Plot:',
                 disabled=True,
@@ -1350,14 +1179,10 @@ class Interface():
         # Display window
         if class_list:
             self._list_widgets_init.children[0].value = self.data_folder
-            self._list_widgets_init.children[1].value = True
-            self._list_widgets_init.children[2].value = True
-            self._list_widgets_init.children[-2].value = False
+            self._list_widgets_init.children[0].disabled = True
+            self._list_widgets_init.children[1].value = "default"
 
-            for w in self._list_widgets_init.children[:-2]:
-                w.disabled = True
-
-            for w in self._list_data.children[:-1]:
+            for w in self.tab_data.children[:-1]:
                 w.disabled = False
 
             for w in self.tab_tools.children[:-1]:
@@ -1380,42 +1205,11 @@ class Interface():
         elif not class_list:
             display(self.window)
 
-    # Initialization function if previous work had been done
-    @staticmethod
-    def get_class_list(data_folder):
-        """
-        Retrieve all the Dataset classes pickled in data_folder
-
-        :param data_folder: folder used to find Dataset
-        """
-        path_classes = data_folder+"/Classes"
-        path_to_classes = [p.replace("\\", "/")
-                           for p in sorted(glob.glob(path_classes+"/*.pickle"))]
-        names = ["Dataset_" + f.split("/")[-1].split(".")[0]
-                 for f in path_to_classes]
-        class_list = []
-
-        for n, f in zip(names, path_to_classes):
-            try:
-                class_list.append(Dataset.unpickle(f))
-
-            except EOFError:
-                print(
-                    f"{n} is empty, restart the procedure from the beginning, \
-                    this may be due to a crash of Jupyter.")
-            except FileNotFoundError:
-                print(f"The Class does not exist for {n}")
-
-        return Interface(class_list)
-
     # Initialization interactive function, if no previous work had been done
     def class_list_init(
         self,
         data_folder,
-        fix_name,
-        create_folders,
-        delete,
-        work
+        tool,
     ):
         """
         Function that generates or updates three subfolders in the "work_dir":
@@ -1424,58 +1218,69 @@ class Interface():
               (stripped of all metadata), in .txt format
             _ data_folder/classes where the data will be saved as a Dataset class
               at the end of your work.
-            _ data_folder/import_data where you can add extra files used in
-              fitting
 
         :param data_folder: root folder to store data in
-        :param fix_name: True to fix data_folder
-        :param create_folders: True to create subdirectories
-        :param delete: Delete all processed data
-        :param work: Start working
+        :param tool: Delete all processed data or start working
         """
 
-        if fix_name:
-            self.data_folder = data_folder
+        self.data_folder = data_folder
+        path_classes = self.data_folder + "Classes/"
+        path_data_as_csv = self.data_folder + "ExportData/"
+        path_figures = self.data_folder + "Figures/"
 
-            path_classes = self.data_folder + "/Classes/"
-            path_data_as_csv = self.data_folder + "/ExportData/"
-            path_figures = self.data_folder + "/Figures/"
+        self.folders = [self.data_folder, path_classes,
+                        path_data_as_csv, path_figures]
 
-            self.folders = [self.data_folder, path_classes,
-                            path_data_as_csv, path_figures]
+        if tool == "default":
+            # Disable other widgets for now
+            for w in self.tab_data.children[:-1] + \
+                    self.tab_tools.children[:-1] + \
+                    self._list_tab_reduce_method.children[:-1] + \
+                    self._list_define_fitting_df.children[:-1] + \
+                    self._list_plot_dataset.children[:-1]:
+                w.disabled = True
 
-        if fix_name and create_folders:
             clear_output(True)
 
-            for folder in self.folders:
-                if not os.path.exists(folder):
-                    try:
-                        os.makedirs(folder)
-                        print(f"{folder} well created.\n")
-                    except FileExistsError:
-                        print(f"{folder} already exists.\n")
-                    except Exception as e:
-                        raise e
+        elif tool == "delete":
+            # Remove widgets options
+            for w in self.tab_data.children[:-1] + \
+                    self.tab_tools.children[:-1] + \
+                    self._list_tab_reduce_method.children[:-1] + \
+                    self._list_define_fitting_df.children[:-1] + \
+                    self._list_plot_dataset.children[:-1]:
+                w.disabled = True
 
-        if fix_name and delete:
-            self._list_data.children[0].options = []
+            self.class_list, self.df_names = [], []
 
-            self._list_shift.children[0].options = []
-            self._list_norm_data.children[0].options = []
-            self._list_deglitching.children[0].options = []
-            self._list_errors_extraction.children[0].options = []
-            self._list_LCF.children[0].options = []
-            self._list_LCF.children[1].options = []
-            self._list_LCF.children[2].options = []
-            self._list_save_as_nexus.children[0].options = []
+            self.tab_data.children[0].options = self.class_list
+            self._list_shift.children[0].options = self.class_list
+            self._list_norm_data.children[0].options = self.class_list
+            self._list_deglitching.children[0].options = self.class_list
+            self._list_errors_extraction.children[0].options = self.class_list
+            self._list_LCF.children[0].options = self.class_list
+            self._list_LCF.children[1].options = self.class_list
+            self._list_LCF.children[2].options = self.class_list
+            self._list_save_as_nexus.children[0].options = self.class_list
 
-            self._list_tab_reduce_method.children[1].options = []
-            self._list_tab_reduce_method.children[2].options = []
+            self._list_tab_reduce_method.children[1].options = self.class_list
+            self._list_tab_reduce_method.children[2].options = self.class_list
 
-            self._list_define_fitting_df.children[0].options = []
+            self._list_define_fitting_df.children[0].options = self.class_list
 
-            self._list_plot_dataset.children[0].options = []
+            self._list_plot_dataset.children[0].options = self.class_list
 
+            self.tab_data.children[1].options = self.df_names
+            self._list_shift.children[1].options = self.df_names
+            self._list_norm_data.children[1].options = self.df_names
+            self._list_deglitching.children[1].options = self.df_names
+            self._list_errors_extraction.children[1].options = self.df_names
+            self._list_LCF.children[3].options = self.df_names
+            self._list_tab_reduce_method.children[3].options = self.df_names
+            self._list_define_fitting_df.children[1].options = self.df_names
+            self._list_plot_dataset.children[1].options = self.df_names
+
+            # Delete data
             CleanedFolder = [path_classes, path_data_as_csv, path_figures]
             for f in CleanedFolder:
                 for the_file in os.listdir(f):
@@ -1491,99 +1296,138 @@ class Interface():
             print("Work has been reset")
             clear_output(True)
 
-        if not work:
-            for w in self._list_data.children[:-1] + \
+        elif tool == "work":
+            for folder in self.folders:
+                if not os.path.exists(folder):
+                    try:
+                        os.makedirs(folder)
+                        print(f"{folder} well created.\n")
+                    except FileExistsError:
+                        print(f"{folder} already exists.\n")
+                    except Exception as e:
+                        raise e
+
+            # Get filenames
+            file_locations = [p.replace("\\", "/") for p in sorted(glob.glob(
+                f"{self.folders[0]}*.nxs")
+            )]
+
+            # Initialize list of all the dataframes
+            self.df_names, self.class_list = [], []
+
+            # Add classes to classlist
+            for f in file_locations:
+                try:
+                    # Create dataset
+                    C = DiamondDataset(f)
+                    self.class_list.append(C)
+                    self.df_names = self.df_names + C.df_names
+
+                    # Pickle dataset
+                    C.pickle_dataset(
+                        self.folders[1] +
+                        C.filename.split(".")[0]+".pickle"
+                    )
+                except Exception as e:
+                    raise e
+
+            # Get the list of all the unique dataframes
+            self.df_names = sorted(list(set(self.df_names)))
+
+            # Update widgets status and options
+            for w in self.tab_data.children[:-1] + \
                     self.tab_tools.children[:-1] + \
                     self._list_tab_reduce_method.children[:-1] + \
                     self._list_define_fitting_df.children[:-1] + \
                     self._list_plot_dataset.children[:-1]:
-                if not w.disabled:
-                    w.disabled = True
+                w.disabled = False
 
-        if work:
-            print("""
-                We now start to manipulate the data.
-                \nFirst, rename each column and select the one we want to use.
-                """)
+            self.tab_data.children[0].options = self.class_list
+            self._list_shift.children[0].options = self.class_list
+            self._list_norm_data.children[0].options = self.class_list
+            self._list_deglitching.children[0].options = self.class_list
+            self._list_errors_extraction.children[0].options = self.class_list
+            self._list_LCF.children[0].options = self.class_list
+            self._list_LCF.children[1].options = self.class_list
+            self._list_LCF.children[2].options = self.class_list
+            self._list_save_as_nexus.children[0].options = self.class_list
 
-            self.file_locations = [p.replace("\\", "/")
-                                   for p in sorted(glob.glob(
-                                       f"{self.folders[0]}*.nxs")
-            )]
+            self._list_tab_reduce_method.children[1].options = self.class_list
+            self._list_tab_reduce_method.children[2].options = self.class_list
 
-            # Possible issues here
-            self.filenames = [
-                "Dataset_"+f.split("/")[-1].split(".")[0]
-                for f in self.file_locations
-            ]
+            self._list_define_fitting_df.children[0].options = self.class_list
 
-            clear_output(True)
+            self._list_plot_dataset.children[0].options = self.class_list
 
-            ButtonSaveData = Button(
-                description="Keep and continue without interpolation.",
-                layout=Layout(width='35%', height='35px'))
+            self.tab_data.children[1].options = self.df_names
+            self._list_shift.children[1].options = self.df_names
+            self._list_norm_data.children[1].options = self.df_names
+            self._list_deglitching.children[1].options = self.df_names
+            self._list_errors_extraction.children[1].options = self.df_names
+            self._list_LCF.children[3].options = self.df_names
+            self._list_tab_reduce_method.children[3].options = self.df_names
+            self._list_define_fitting_df.children[1].options = self.df_names
+            self._list_plot_dataset.children[1].options = self.df_names
 
-            # Always with interpolation
-            display(ButtonSaveData)
+        elif tool == "reload":
+            # Get filenames
+            file_locations = sorted(glob.glob(self.folders[1]+"*.pickle"))
 
-            @ButtonSaveData.on_click
-            def ActionSaveData(selfbutton):
-                # Initialize list of all the dataframes
-                self.df_names = []
+            # Initialize list of all the dataframes
+            self.df_names, self.class_list = [], []
 
-                # Add classes to classlist
-                for n, f in zip(self.filenames, self.file_locations):
-                    try:
-                        C = DiamondDataset(f)
-                        self.class_list.append(C)
-                        self.df_names = self.df_names + C.df_names
-                        # C.pickle()
+            for f in file_locations:
+                try:
+                    C = DiamondDataset.unpickle(f)
+                    self.class_list.append(C)
+                    self.df_names = self.df_names + C.df_names
+                    print("Loaded", f)
+                    print(f"\t{C.df_names}")
 
-                    except Exception as e:
-                        raise e
+                except EOFError:
+                    print(
+                        f"{n} is empty, restart the procedure from the beginning, \
+                        this may be due to a crash of Jupyter.")
+                except FileNotFoundError:
+                    print(f"The Class does not exist for {n}")
 
-                self.df_names = sorted(list(set(self.df_names)))
-                ButtonSaveData.disabled = True
+            # Get the list of all the unique dataframes
+            self.df_names = sorted(list(set(self.df_names)))
 
-                for w in self._list_data.children[:-1] + \
-                        self.tab_tools.children[:-1] + \
-                        self._list_tab_reduce_method.children[:-1] + \
-                        self._list_define_fitting_df.children[:-1] + \
-                        self._list_plot_dataset.children[:-1]:
-                    w.disabled = False
+            # Update widgets status and options
+            for w in self.tab_data.children[:-1] + \
+                    self.tab_tools.children[:-1] + \
+                    self._list_tab_reduce_method.children[:-1] + \
+                    self._list_define_fitting_df.children[:-1] + \
+                    self._list_plot_dataset.children[:-1]:
+                w.disabled = False
 
-                # Does not update automatically sadly
-                self._list_data.children[0].options = self.class_list
-                self._list_flip.children[0].options = self.class_list
-                self._list_stable_monitor.children[0].options = self.class_list
-                self._list_shift.children[0].options = self.class_list
-                self._list_norm_data.children[0].options = self.class_list
-                self._list_deglitching.children[0].options = self.class_list
-                self._list_errors_extraction.children[0].options = self.class_list
-                self._list_LCF.children[0].options = self.class_list
-                self._list_LCF.children[1].options = self.class_list
-                self._list_LCF.children[2].options = self.class_list
-                self._list_save_as_nexus.children[0].options = self.class_list
+            self.tab_data.children[0].options = self.class_list
+            self._list_shift.children[0].options = self.class_list
+            self._list_norm_data.children[0].options = self.class_list
+            self._list_deglitching.children[0].options = self.class_list
+            self._list_errors_extraction.children[0].options = self.class_list
+            self._list_LCF.children[0].options = self.class_list
+            self._list_LCF.children[1].options = self.class_list
+            self._list_LCF.children[2].options = self.class_list
+            self._list_save_as_nexus.children[0].options = self.class_list
 
-                self._list_tab_reduce_method.children[1].options = self.class_list
-                self._list_tab_reduce_method.children[2].options = self.class_list
+            self._list_tab_reduce_method.children[1].options = self.class_list
+            self._list_tab_reduce_method.children[2].options = self.class_list
 
-                self._list_define_fitting_df.children[0].options = self.class_list
+            self._list_define_fitting_df.children[0].options = self.class_list
 
-                self._list_plot_dataset.children[0].options = self.class_list
+            self._list_plot_dataset.children[0].options = self.class_list
 
-                # Need to update the df options here for all
-                self._list_data.children[1].options = self.df_names
-                self._list_flip.children[1].options = self.df_names
-                self._list_stable_monitor.children[1].options = self.df_names
-                self._list_shift.children[1].options = self.df_names
-                self._list_norm_data.children[1].options = self.df_names
-                self._list_deglitching.children[1].options = self.df_names
-                self._list_errors_extraction.children[1].options = self.df_names
-                self._list_LCF.children[3].options = self.df_names
-                self._list_tab_reduce_method.children[3].options = self.df_names
-                self._list_define_fitting_df.children[1].options = self.df_names
-                self._list_plot_dataset.children[1].options = self.df_names
+            self.tab_data.children[1].options = self.df_names
+            self._list_shift.children[1].options = self.df_names
+            self._list_norm_data.children[1].options = self.df_names
+            self._list_deglitching.children[1].options = self.df_names
+            self._list_errors_extraction.children[1].options = self.df_names
+            self._list_LCF.children[3].options = self.df_names
+            self._list_tab_reduce_method.children[3].options = self.df_names
+            self._list_define_fitting_df.children[1].options = self.df_names
+            self._list_plot_dataset.children[1].options = self.df_names
 
     # Visualization interactive function
 
@@ -1605,10 +1449,6 @@ class Interface():
     # Tools global interactive function
 
     def treat_data(self, method, plot_bool):
-        if method == "flip" and plot_bool:
-            display(self.widget_list_flip)
-        if method == "stable_monitor" and plot_bool:
-            display(self.widget_list_stable_monitor)
         if method == "shift" and plot_bool:
             display(self.widget_list_shift)
         if method == "deglitching" and plot_bool:
@@ -1626,134 +1466,11 @@ class Interface():
             clear_output(True)
             plt.close()
 
-    # Tools interactive sub-functions
-    def flip_axis(self, spec_number, df, x, y, shift):
-        """
-        Allows one to crrect a possible flip of the value around the x axis
-        """
-
-        if spec_number:
-            try:
-                fig, axs = plt.subplots(3, figsize=(16, 16))
-
-                axs[0].set_title('Selected datasets before correction')
-                axs[0].set_xlabel("Energy")
-                axs[0].set_ylabel('NEXAFS intensity')
-
-                axs[1].set_title('Selected datasets after shift')
-                axs[1].set_xlabel("Energy")
-                axs[1].set_ylabel('NEXAFS intensity')
-
-                axs[2].set_title(
-                    'Selected datasets after shift, absolute values')
-                axs[2].set_xlabel("Energy")
-                axs[2].set_ylabel('NEXAFS intensity')
-
-                for j, C in enumerate(spec_number):
-                    used_df = getattr(C, df).copy()
-
-                    # Plot before correction
-                    axs[0].plot(used_df[x], used_df[y])
-
-                    # Plots after correction
-                    new_y = used_df[y] - shift
-
-                    axs[1].plot(used_df[x], new_y)
-                    axs[2].plot(used_df[x], abs(new_y), label=C.filename)
-
-                lines, labels = [], []
-                for ax in axs:
-                    axLine, axLabel = ax.get_legend_handles_labels()
-                    lines.extend(axLine)
-                    labels.extend(axLabel)
-
-                fig.tight_layout()
-
-                fig.legend(lines,
-                           labels,
-                           loc='lower center',
-                           borderaxespad=0.1,
-                           fancybox=True,
-                           shadow=True,
-                           ncol=5)
-                plt.subplots_adjust(bottom=0.15)
-                plt.show()
-
-                ButtonFlip = Button(
-                    description="Apply flip",
-                    layout=Layout(width='15%', height='35px'))
-                display(ButtonFlip)
-
-                @ButtonFlip.on_click
-                def ActionButtonFlip(selfbutton):
-                    "Apply shifts correction"
-                    for j, C in enumerate(spec_number):
-                        used_df = getattr(C, df)
-                        flip_df = used_df.copy()
-                        flip_df[y] = abs(used_df[y]-shift)
-                        setattr(C, df, flip_df)
-
-                        # Save work
-                        flip_df.to_csv(
-                            f"{self.folders[2]}{C.filename}_flipped.csv", index=False)
-                        C.pickle()
-                    print("Flip well applied and saved in same dataframe.")
-
-            except (AttributeError, KeyError):
-                clear_output(True)
-                plt.close()
-                if y == "value":
-                    print("Please select a column.")
-                else:
-                    print(f"Wrong Dataset and column combination !")
-
-        else:
-            clear_output(True)
-            plt.close()
-            print("You need to select at least one Dataset !")
-
-    def stable_monitor_method(
-        self,
-        spec_number,
-        df,
-        sample_intensity,
-        reference_intensity,
-        compute
-    ):
-        """
-        """
-
-        if spec_number and compute:
-
-            try:
-                for j, C in enumerate(spec_number):
-                    used_df = getattr(C, df)
-                    used_df["First normalized \u03BC"] = used_df[sample_intensity] / \
-                        used_df[reference_intensity]
-
-                    # Save work
-                    used_df.to_csv(
-                        f"{self.folders[2]}{C.filename}_StableMonitorNorm.csv", index=False)
-                    C.pickle()
-
-                print(
-                    "Data well normalised and saved as First normalized \u03BC, in the same dataframe.")
-
-            except (AttributeError, KeyError, NameError):
-                plt.close()
-                if sample_intensity == "value":
-                    print(
-                        "Please select a column for the values of the reference sample.")
-                else:
-                    print(f"Wrong Dataset and column combination !")
-
-                if reference_intensity == "value":
-                    print("Please select a column for the values of the mesh.")
-                else:
-                    print(f"Wrong Dataset and column combination !")
-
     def energy_shift(self, spec, df, x, y):
-        """Allows one to shift each Dataset by a certain amount k"""
+        """
+        Allows one to shift each Dataset by a certain amount to align on the
+        Fermi energy, shift is performed on all the Dataset dataframes
+        """
 
         try:
             self.used_df = getattr(spec, df)  # not a copy !
@@ -1878,6 +1595,12 @@ class Interface():
                             print(
                                 f"Shift ({shift_widget} eV) applied to {df_name} and saved as csv.")
 
+                        # Pickle dataset
+                        self.used_dataset.pickle_dataset(
+                            self.folders[1] +
+                            self.used_dataset.filename.split(".")[0]+".pickle"
+                        )
+
         except (AttributeError, KeyError):
             print(f"Wrong Dataset and column combination !")
 
@@ -1918,7 +1641,7 @@ class Interface():
                     # Plot
                     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                     axs[0].set_xlabel("Energy")
-                    axs[0].set_ylabel('NEXAFS')
+                    axs[0].set_ylabel('Intensity')
                     axs[0].set_title('Raw Data')
                     axs[0].tick_params(direction='in', labelsize=15, width=2)
 
@@ -1932,7 +1655,7 @@ class Interface():
 
                     axs[1].set_title('Region Zoom')
                     axs[1].set_xlabel("Energy")
-                    axs[1].set_ylabel('NEXAFS')
+                    axs[1].set_ylabel('Intensity')
                     axs[1].tick_params(direction='in', labelsize=15, width=2)
 
                     axs[1].plot(energy[v1:v2], mu[v1:v2], 'o', color='orange')
@@ -1974,7 +1697,6 @@ class Interface():
                         used_df = getattr(C, df)
                         used_df[y][v1:v2] = ITN
                         clear_output(True)
-                        C.pickle()
                         print(
                             f"Degliched {C.filename}, energy Range: [{energy[v1]}, {energy[v2]}] (eV)")
                         deglitch(interval)
@@ -1991,7 +1713,17 @@ class Interface():
             else:
                 print(f"Wrong Dataset and column combination !")
 
-    def errors_extraction(self, spec, df, xcol, ycol, nbpts, deg, direction, compute):
+    def errors_extraction(
+        self,
+        spec,
+        df,
+        x_axis,
+        y_axis,
+        nbpts,
+        deg,
+        direction,
+        compute
+    ):
 
         def poly(x, y, deg):
             coef = np.polyfit(x, y, deg)
@@ -2003,8 +1735,8 @@ class Interface():
                 clear_output(True)
                 self.used_datasets, self.used_df_type = spec, df
                 used_df = getattr(self.used_datasets, self.used_df_type)
-                x = used_df[xcol]
-                y = used_df[ycol]
+                x = used_df[x_axis]
+                y = used_df[y_axis]
 
                 if nbpts % 2 == 0:
                     n = int(nbpts / 2)
@@ -2060,13 +1792,13 @@ class Interface():
 
                 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                 axs[0].set_xlabel("Energy")
-                axs[0].set_ylabel('NEXAFS')
+                axs[0].set_ylabel('Intensity')
                 axs[0].set_title('Data')
                 axs[0].plot(x, y, label="Data")
                 axs[0].legend()
 
                 axs[1].set_xlabel("Energy")
-                axs[1].set_ylabel('NEXAFS')
+                axs[1].set_ylabel('Intensity')
                 axs[1].set_title('Root Mean Square')
                 axs[1].plot(x, self.errors["RMS"], label="RMS")
                 axs[1].legend()
@@ -2078,12 +1810,11 @@ class Interface():
                     setattr(self.used_datasets, self.used_df_type, pd.concat(
                         [used_df, self.errors], axis=1, sort=False))
 
-                self.used_datasets.pickle()
                 display(getattr(self.used_datasets, self.used_df_type))
 
             except (AttributeError, KeyError):
                 plt.close()
-                if ycol == "value":
+                if y_axis == "value":
                     print("Please select a column.")
                 else:
                     print(f"Wrong Dataset and column combination !")
@@ -2109,13 +1840,17 @@ class Interface():
                             used_df = getattr(C, df_type)
                             try:
                                 v1Data.append(
-                                    int(np.where(used_df["Energy"].values == self.energy_widgets[0].value[0])[0]))
+                                    int(np.where(
+                                        used_df["Energy"].values ==
+                                        self.energy_widgets[0].value[0])[0]))
                             except TypeError:
                                 v1Data.append(0)
 
                             try:
                                 v2Data.append(
-                                    int(np.where(used_df["Energy"].values == self.energy_widgets[0].value[1])[0]))
+                                    int(np.where(
+                                        used_df["Energy"].values ==
+                                        self.energy_widgets[0].value[1])[0]))
                             except TypeError:
                                 v2Data.append(len(used_df["Energy"].values)-1)
 
@@ -2144,13 +1879,17 @@ class Interface():
                         for used_df in self.ref_df:
                             try:
                                 v1Ref.append(
-                                    int(np.where(used_df["Energy"].values == self.energy_widgets[0].value[0])[0]))
+                                    int(np.where(
+                                        used_df["Energy"].values ==
+                                        self.energy_widgets[0].value[0])[0]))
                             except TypeError:
                                 v1Ref.append(0)
 
                             try:
                                 v2Ref.append(
-                                    int(np.where(used_df["Energy"].values == self.energy_widgets[0].value[1])[0]))
+                                    int(np.where(
+                                        used_df["Energy"].values ==
+                                        self.energy_widgets[0].value[1])[0]))
                             except TypeError:
                                 v2Ref.append(len(used_df["Energy"].values)-1)
 
@@ -2265,8 +2004,6 @@ class Interface():
                                     print(f"R factor :{r_factor}")
                                     setattr(C, "ref_R_factor", r_factor)
 
-                                    C.pickle()
-
                                 # Final plot of the reference weights
                                 fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -2352,8 +2089,8 @@ class Interface():
             clear_output(True)
             print("Select at least two references, one Dataset that will serve to visualise the interpolation, and the list of datasets you would like to process.")
 
-    def save_as_nexus(self, spec_number, apply_all):
-        if apply_all:
+    def save_as_nexus(self, spec_number, save_bool):
+        if save_bool:
             for C in spec_number:
                 print(f"Saving as {C.filename} ... ")
                 C.to_nxs()
@@ -2448,14 +2185,30 @@ class Interface():
                         self.save_df_to_csv(
                             self.used_dataset, self.used_df_name)
 
+                        # Pickle dataset
+                        self.used_dataset.pickle_dataset(
+                            self.folders[1] +
+                            self.used_dataset.filename.split(".")[0]+".pickle"
+                        )
+
                         print("Normalized DataFrame, and saved as csv.")
 
         except (AttributeError, KeyError):
             print(f"Wrong Dataset and column combination !")
 
     # Reduction interactive function
-    def reduce_data(self, method, used_class_list, used_datasets, df, plot_bool):
-        """Define the reduction routine to follow depending on the Reduction widget state."""
+    def reduce_data(
+        self,
+        method,
+        used_class_list,
+        used_datasets,
+        df,
+        plot_bool
+    ):
+        """
+        Define the reduction routine to follow depending on the
+        Reduction widget state.
+        """
         try:
             self.used_class_list = used_class_list
             self.used_datasets = used_datasets
@@ -2547,7 +2300,7 @@ class Interface():
 
             fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
             axs[0].set_xlabel("Energy")
-            axs[0].set_ylabel('NEXAFS')
+            axs[0].set_ylabel('Intensity')
             axs[0].set_title('Raw Data')
             axs[0].tick_params(direction='in', labelsize=15, width=2)
 
@@ -2570,7 +2323,7 @@ class Interface():
 
             axs[1].set_title('Background subtracted')
             axs[1].set_xlabel("Energy")
-            axs[1].set_ylabel('NEXAFS')
+            axs[1].set_ylabel('Intensity')
             axs[1].yaxis.set_label_position("right")
             axs[1].yaxis.tick_right()
             axs[1].tick_params(direction='in', labelsize=15, width=2)
@@ -2604,7 +2357,6 @@ class Interface():
                 print(f"Saved Dataset {C.filename}")
                 temp_df.to_csv(
                     f"{self.folders[2]}{C.filename}_reduced.csv", index=False)
-                C.pickle()
 
             @ButtonRemoveBackground.on_click
             def ActionRemoveBackground(selfbutton):
@@ -2614,12 +2366,12 @@ class Interface():
                 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                 ax[0].set_title('Background subtracted')
                 ax[0].set_xlabel("Energy")
-                ax[0].set_ylabel('NEXAFS')
+                ax[0].set_ylabel('Intensity')
                 ax[0].tick_params(direction='in', labelsize=15, width=2)
 
                 ax[1].set_title('Background subtracted shifted')
                 ax[1].set_xlabel("Energy")
-                ax[1].set_ylabel('NEXAFS')
+                ax[1].set_ylabel('Intensity')
                 ax[1].yaxis.tick_right()
                 ax[1].tick_params(direction='in', labelsize=15, width=2)
                 ax[1].yaxis.set_label_position("right")
@@ -2666,7 +2418,6 @@ class Interface():
                         print(f"Saved Dataset {C.filename}")
                         temp_df.to_csv(
                             f"{self.folders[2]}{C.filename}_reduced.csv", index=False)
-                        C.pickle()
 
                 @ButtonNormalize.on_click
                 def ActionButtonNormalize(selfbutton):
@@ -2683,12 +2434,12 @@ class Interface():
                     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                     ax[0].set_title('Background subtracted normalized')
                     ax[0].set_xlabel("Energy")
-                    ax[0].set_ylabel('NEXAFS')
+                    ax[0].set_ylabel('Intensity')
                     ax[0].tick_params(direction='in', labelsize=15, width=2)
                     ax[1].set_title(
                         'Background subtracted normalized & shifted')
                     ax[1].set_xlabel("Energy")
-                    ax[1].set_ylabel('NEXAFS')
+                    ax[1].set_ylabel('Intensity')
                     ax[1].yaxis.set_label_position("right")
                     ax[1].yaxis.tick_right()
                     ax[1].tick_params(direction='in', labelsize=15, width=2)
@@ -2721,7 +2472,6 @@ class Interface():
                             print(f"Saved Dataset {C.filename}")
                             temp_df.to_csv(
                                 f"{self.folders[2]}{C.filename}_reduced.csv", index=False)
-                            C.pickle()
 
         except (AttributeError, KeyError):
             plt.close()
@@ -2769,7 +2519,7 @@ class Interface():
 
             fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
             axs[0].set_xlabel("Energy")
-            axs[0].set_ylabel('NEXAFS')
+            axs[0].set_ylabel('Intensity')
             axs[0].set_title('Raw Data')
             axs[0].tick_params(direction='in', labelsize=15, width=2)
 
@@ -2792,7 +2542,7 @@ class Interface():
 
             axs[1].set_title('Background subtracted')
             axs[1].set_xlabel("Energy")
-            axs[1].set_ylabel('NEXAFS')
+            axs[1].set_ylabel('Intensity')
             axs[1].yaxis.set_label_position("right")
             axs[1].yaxis.tick_right()
             axs[1].tick_params(direction='in', labelsize=15, width=2)
@@ -2834,7 +2584,6 @@ class Interface():
                 print(f"Saved Dataset {C.filename}")
                 temp_df.to_csv(
                     f"{self.folders[2]}{C.filename}_reduced.csv", index=False)
-                C.pickle()
 
             @ButtonRemoveBackground.on_click
             def ActionRemoveBackground(selfbutton):
@@ -2844,14 +2593,14 @@ class Interface():
                 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                 ax[0].set_title('Background subtracted')
                 ax[0].set_xlabel("Energy")
-                ax[0].set_ylabel('NEXAFS')
+                ax[0].set_ylabel('Intensity')
                 ax[0].tick_params(direction='in', labelsize=15, width=2)
                 ax[0].set_xlim(energy[number][v1[number]],
                                energy[number][v2[number]])
 
                 ax[1].set_title('Background subtracted shifted')
                 ax[1].set_xlabel("Energy")
-                ax[1].set_ylabel('NEXAFS')
+                ax[1].set_ylabel('Intensity')
                 ax[1].yaxis.tick_right()
                 ax[1].tick_params(direction='in', labelsize=15, width=2)
                 ax[1].set_xlim(energy[number][v1[number]],
@@ -2900,7 +2649,6 @@ class Interface():
                         print(f"Saved Dataset {C.filename}")
                         temp_df.to_csv(
                             f"{self.folders[2]}{C.filename}_reduced.csv", index=False)
-                        C.pickle()
 
                 @ButtonNormalize.on_click
                 def ActionButtonNormalize(selfbutton):
@@ -2917,14 +2665,14 @@ class Interface():
                     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                     ax[0].set_title('Background subtracted normalized')
                     ax[0].set_xlabel("Energy")
-                    ax[0].set_ylabel('NEXAFS')
+                    ax[0].set_ylabel('Intensity')
                     ax[0].tick_params(direction='in', labelsize=15, width=2)
                     ax[0].set_xlim(energy[number][v1[number]],
                                    energy[number][v2[number]])
                     ax[1].set_title(
                         'Background subtracted normalized & shifted')
                     ax[1].set_xlabel("Energy")
-                    ax[1].set_ylabel('NEXAFS')
+                    ax[1].set_ylabel('Intensity')
                     ax[1].yaxis.set_label_position("right")
                     ax[1].yaxis.tick_right()
                     ax[1].tick_params(direction='in', labelsize=15, width=2)
@@ -2959,7 +2707,6 @@ class Interface():
                             print(f"Saved Dataset {C.filename}")
                             temp_df.to_csv(
                                 f"{self.folders[2]}{C.filename}_reduced.csv", index=False)
-                            C.pickle()
 
         except (AttributeError, KeyError):
             plt.close()
@@ -3005,7 +2752,7 @@ class Interface():
 
                 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                 axs[0].set_xlabel("Energy")
-                axs[0].set_ylabel('NEXAFS')
+                axs[0].set_ylabel('Intensity')
                 axs[0].set_title('Raw Data')
                 axs[0].tick_params(direction='in', labelsize=15, width=2)
 
@@ -3038,7 +2785,7 @@ class Interface():
                 axs[1].plot(energy[number][v1[number]:v2[number]], difference)
                 axs[1].set_title('Bgk subtracted')
                 axs[1].set_xlabel("Energy")
-                axs[1].set_ylabel('NEXAFS')
+                axs[1].set_ylabel('Intensity')
                 axs[1].yaxis.set_label_position("right")
                 axs[1].tick_params(direction='in', labelsize=15, width=2)
                 axs[1].set_xlim(energy[number][v1[number]],
@@ -3070,7 +2817,6 @@ class Interface():
                     display(temp_df)
                     setattr(C, "reduced_df", temp_df)
                     print(f"Saved Dataset {C.filename}")
-                    C.pickle()
                     temp_df.to_csv(
                         f"{self.folders[2]}{C.filename}_reduced.csv", index=False)
 
@@ -3091,14 +2837,14 @@ class Interface():
                     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                     ax[0].set_title('Background subtracted')
                     ax[0].set_xlabel("Energy")
-                    ax[0].set_ylabel('NEXAFS')
+                    ax[0].set_ylabel('Intensity')
                     ax[0].tick_params(direction='in', labelsize=15, width=2)
                     ax[0].set_xlim(energy[number][v1[number]],
                                    energy[number][v2[number]])
 
                     ax[1].set_title('Background subtracted shifted')
                     ax[1].set_xlabel("Energy")
-                    ax[1].set_ylabel('NEXAFS')
+                    ax[1].set_ylabel('Intensity')
                     ax[1].yaxis.tick_right()
                     ax[1].tick_params(direction='in', labelsize=15, width=2)
                     ax[1].set_xlim(energy[number][v1[number]],
@@ -3133,7 +2879,6 @@ class Interface():
                                 1/d if d > 0 else 0 for d in ITB[j]]
                             setattr(C, "reduced_df", temp_df)
                             print(f"Saved Dataset {C.filename}")
-                            C.pickle()
                             temp_df.to_csv(
                                 f"{self.folders[2]}{C.filename}_reduced.csv", index=False)
 
@@ -3152,7 +2897,7 @@ class Interface():
                             nrows=1, ncols=2, figsize=(16, 6))
                         ax[0].set_title('Background subtracted normalized')
                         ax[0].set_xlabel("Energy")
-                        ax[0].set_ylabel('NEXAFS')
+                        ax[0].set_ylabel('Intensity')
                         ax[0].tick_params(
                             direction='in', labelsize=15, width=2)
                         ax[0].set_xlim(energy[number][v1[number]],
@@ -3160,7 +2905,7 @@ class Interface():
                         ax[1].set_title(
                             'Background subtracted normalized & shifted')
                         ax[1].set_xlabel("Energy")
-                        ax[1].set_ylabel('NEXAFS')
+                        ax[1].set_ylabel('Intensity')
                         ax[1].yaxis.set_label_position("right")
                         ax[1].yaxis.tick_right()
                         ax[1].tick_params(
@@ -3193,7 +2938,6 @@ class Interface():
                                 temp_df["second_normalized_\u03BC"] = ITN[j]
                                 setattr(C, "reduced_df", temp_df)
                                 print(f"Saved Dataset {C.filename}")
-                                C.pickle()
                                 temp_df.to_csv(
                                     f"{self.folders[2]}{C.filename}_reduced.csv", index=False)
 
@@ -3223,7 +2967,15 @@ class Interface():
             plt.close()
             print("The selected energy range is wrong.")
 
-    def reduce_single_spline(self, y, order, interval, cursor, param_A, param_B):
+    def reduce_single_spline(
+        self,
+        y,
+        order,
+        interval,
+        cursor,
+        param_A,
+        param_B
+    ):
         """Single spline method to remove background
         """
 
@@ -3297,7 +3049,7 @@ class Interface():
 
             fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
             axs[0].set_xlabel("Energy")
-            axs[0].set_ylabel('NEXAFS')
+            axs[0].set_ylabel('Intensity')
             axs[0].set_title('Raw Data')
 
             axs[0].plot(energy[number], mu[number], label='Data')
@@ -3316,7 +3068,7 @@ class Interface():
 
             axs[1].set_title('Background subtracted & normalized curve')
             axs[1].set_xlabel("Energy")
-            axs[1].set_ylabel('NEXAFS')
+            axs[1].set_ylabel('Intensity')
             axs[1].yaxis.set_label_position("right")
             axs[1].yaxis.tick_right()
             axs[1].set_xlim(energy[number][0], energy[number][-1])
@@ -3339,7 +3091,6 @@ class Interface():
                 print(f"Saved Dataset {C.filename}")
                 temp_df.to_csv(
                     f"{self.folders[2]}{C.filename}_reduced.csv", index=False)
-                C.pickle()
 
             @ButtonRemoveBackground.on_click
             def ActionRemoveBackground(selfbutton):
@@ -3349,11 +3100,11 @@ class Interface():
                 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                 ax[0].set_title('Background subtracted')
                 ax[0].set_xlabel("Energy")
-                ax[0].set_ylabel('NEXAFS')
+                ax[0].set_ylabel('Intensity')
 
                 ax[1].set_title('Background subtracted shifted')
                 ax[1].set_xlabel("Energy")
-                ax[1].set_ylabel('NEXAFS')
+                ax[1].set_ylabel('Intensity')
                 ax[1].yaxis.tick_right()
                 ax[1].yaxis.set_label_position("right")
 
@@ -3425,7 +3176,6 @@ class Interface():
                         print(f"Saved Dataset {C.filename}")
                         temp_df.to_csv(
                             f"{self.folders[2]}{C.filename}_reduced.csv", index=False)
-                        C.pickle()
 
                 @ButtonNormalize.on_click
                 def ActionButtonNormalize(selfbutton):
@@ -3439,12 +3189,12 @@ class Interface():
                     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                     ax[0].set_title('Background subtracted normalized')
                     ax[0].set_xlabel("Energy")
-                    ax[0].set_ylabel('NEXAFS')
+                    ax[0].set_ylabel('Intensity')
                     ax[0].tick_params(direction='in', labelsize=15, width=2)
                     ax[1].set_title(
                         'Background subtracted normalized & shifted')
                     ax[1].set_xlabel("Energy")
-                    ax[1].set_ylabel('NEXAFS')
+                    ax[1].set_ylabel('Intensity')
                     ax[1].yaxis.set_label_position("right")
                     ax[1].yaxis.tick_right()
                     ax[1].tick_params(direction='in', labelsize=15, width=2)
@@ -3477,7 +3227,6 @@ class Interface():
                             print(f"Saved Dataset {C.filename}")
                             temp_df.to_csv(
                                 f"{self.folders[2]}{C.filename}_reduced.csv", index=False)
-                            C.pickle()
 
         except (AttributeError, KeyError):
             plt.close()
@@ -3538,7 +3287,7 @@ class Interface():
 
                 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                 axs[0].set_xlabel("Energy")
-                axs[0].set_ylabel('NEXAFS')
+                axs[0].set_ylabel('Intensity')
                 axs[0].set_title('1st Derivative')
                 axs[0].tick_params(direction='in', labelsize=15, width=2)
                 axs[0].plot(dE[number], dy[number], "--",
@@ -3570,7 +3319,7 @@ class Interface():
                 axs[1].set_title("F")
 
                 axs[1].set_xlabel("Energy")
-                axs[1].set_ylabel('NEXAFS')
+                axs[1].set_ylabel('Intensity')
                 axs[1].yaxis.set_label_position("right")
 
                 print('cursor Position:', dE[number][s], 'eV')
@@ -3591,14 +3340,12 @@ class Interface():
 
                 def ActionSaveE0(selfbutton):
                     setattr(self.used_datasets, "E0", dE[number][s])
-                    self.used_datasets.pickle()
                     print(f"Saved E0 for {self.used_datasets.filename};  ")
 
                 def ActionSaveAll(selfbutton):
                     for j, C in enumerate(self.used_class_list):
                         setattr(
                             self.used_class_list[j], "E0", dE[j][maxima[j]])
-                        C.pickle()
                         print(
                             f"Saved E0 for {self.used_class_list[j].filename};  ")
 
@@ -3749,8 +3496,22 @@ class Interface():
             plt.close()
             print("The selected energy range is wrong.")
 
-    def reduce_splines(self, spec, order_pre, order_pst, s1, s2, param_a1, param_b1, param_a2, param_b2, y):
-        """Reduce the background using two curves and then normalize by edge-jump."""
+    def reduce_splines(
+        self,
+        spec,
+        order_pre,
+        order_pst,
+        s1,
+        s2,
+        param_a1,
+        param_b1,
+        param_a2,
+        param_b2,
+        y
+    ):
+        """
+        Reduce the background using two curves and then normalize by edge-jump.
+        """
 
         try:
             number = self.used_class_list.index(spec)
@@ -3858,7 +3619,7 @@ class Interface():
             # Plot current work
             fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
             axs[0].set_xlabel("Energy")
-            axs[0].set_ylabel('NEXAFS')
+            axs[0].set_ylabel('Intensity')
             axs[0].set_title('Raw Data')
             axs[0].tick_params(direction='in', labelsize=15, width=2)
 
@@ -3899,7 +3660,7 @@ class Interface():
                            label="Normalization to 1.")
             axs[1].set_xlim(np.min(energy[number]), np.max(energy[number]))
             axs[1].set_xlabel("Energy")
-            axs[1].set_ylabel('NEXAFS')
+            axs[1].set_ylabel('Intensity')
             axs[1].yaxis.set_label_position("right")
             axs[1].tick_params(direction='in', labelsize=15, width=2)
             axs[1].legend()
@@ -3927,7 +3688,7 @@ class Interface():
                 # Need to plot again
                 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                 axs[0].set_xlabel("Energy")
-                axs[0].set_ylabel('NEXAFS')
+                axs[0].set_ylabel('Intensity')
                 axs[0].set_title('Raw Data')
                 axs[0].tick_params(direction='in', labelsize=15, width=2)
 
@@ -3969,7 +3730,7 @@ class Interface():
                                label="Normalization to 1.")
                 axs[1].set_xlim(np.min(energy[number]), np.max(energy[number]))
                 axs[1].set_xlabel("Energy")
-                axs[1].set_ylabel('NEXAFS')
+                axs[1].set_ylabel('Intensity')
                 axs[1].yaxis.set_label_position("right")
                 axs[1].tick_params(direction='in', labelsize=15, width=2)
                 axs[1].legend()
@@ -3980,7 +3741,6 @@ class Interface():
                 plt.savefig(
                     f"{self.folders[3]}splines_reduced_{spec.filename}.png")
                 plt.close()
-                spec.pickle()
 
         except (AttributeError, KeyError):
             plt.close()
@@ -4019,7 +3779,7 @@ class Interface():
 
             fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
             axs[0].set_xlabel("Energy")
-            axs[0].set_ylabel('NEXAFS')
+            axs[0].set_ylabel('Intensity')
             axs[0].set_title('Data')
             axs[0].tick_params(direction='in', labelsize=15, width=2)
 
@@ -4034,7 +3794,7 @@ class Interface():
 
             axs[1].set_title('normalized data')
             axs[1].set_xlabel("Energy")
-            axs[1].set_ylabel('NEXAFS')
+            axs[1].set_ylabel('Intensity')
             axs[1].yaxis.set_label_position("right")
             axs[1].yaxis.tick_right()
             axs[1].tick_params(direction='in', labelsize=15, width=2)
@@ -4060,12 +3820,12 @@ class Interface():
 
                 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
                 axs[0].set_xlabel("Energy")
-                axs[0].set_ylabel('NEXAFS')
+                axs[0].set_ylabel('Intensity')
                 axs[0].set_title('Data')
 
                 axs[1].set_title('normalized data')
                 axs[1].set_xlabel("Energy")
-                axs[1].set_ylabel('NEXAFS')
+                axs[1].set_ylabel('Intensity')
 
                 normalized_data = []
                 for j, C in enumerate(self.used_class_list):
@@ -4099,7 +3859,6 @@ class Interface():
                         print(f"Saved Dataset {C.filename}")
                         temp_df.to_csv(
                             f"{self.folders[2]}{C.filename}_reduced.csv", index=False)
-                        C.pickle()
 
         except (AttributeError, KeyError):
             plt.close()
@@ -4135,8 +3894,8 @@ class Interface():
 
     def define_model(
         self,
-        xcol,
-        ycol,
+        x_axis,
+        y_axis,
         interval,
         peak_number,
         peak_type,
@@ -4157,15 +3916,15 @@ class Interface():
 
         try:
             v1, v2 = interval
-            indices = np.where((self.used_df_fit[xcol] > v1) & (
-                self.used_df_fit[xcol] < v2))
+            indices = np.where((self.used_df_fit[x_axis] > v1) & (
+                self.used_df_fit[x_axis] < v2))
 
-            y = self.used_df_fit[ycol].values[indices[0]]
-            x = self.used_df_fit[xcol].values[indices[0]]
+            y = self.used_df_fit[y_axis].values[indices[0]]
+            x = self.used_df_fit[x_axis].values[indices[0]]
 
             self.fit_df = pd.DataFrame({
-                xcol: x,
-                ycol: y
+                x_axis: x,
+                y_axis: y
             })
 
             # Background
@@ -4218,16 +3977,15 @@ class Interface():
                     ButtonSaveModel = Button(
                         description="Save current work",
                         layout=Layout(width='15%', height='35px'))
-                    display(widgets.HBox(
-                        (ButtonRetrievePara, ButtonSavePara, ButtonGuess, ButtonFit, ButtonSaveModel)))
+                    display(widgets.HBox((
+                        ButtonRetrievePara, ButtonSavePara, ButtonGuess,
+                        ButtonFit, ButtonSaveModel
+                    )))
                     display(self.pars)
 
                     @ButtonRetrievePara.on_click
                     def ActionRetrievePara(selfbutton):
                         clear_output(True)
-                        plt.close()
-                        # display(widgets.HBox(
-                        #     (ButtonRetrievePara, ButtonSavePara, ButtonGuess, ButtonFit, ButtonSaveModel)))
 
                         try:
                             self.result = getattr(self.used_datasets, "result")
@@ -4242,9 +4000,6 @@ class Interface():
                     @ButtonSavePara.on_click
                     def ActionSavePara(selfbutton):
                         clear_output(True)
-                        plt.close()
-                        # display(widgets.HBox(
-                        #     (ButtonRetrievePara, ButtonSavePara, ButtonGuess, ButtonFit, ButtonSaveModel)))
                         try:
                             if column == "value":
                                 self.pars[f"{para}"].set(value=value)
@@ -4253,7 +4008,6 @@ class Interface():
                             if column == "max":
                                 self.pars[f"{para}"].set(max=value)
 
-                            # display(self.pars)
                             ButtonGuess.click()
                         except Exception as e:
                             raise e
@@ -4261,29 +4015,58 @@ class Interface():
                     @ButtonGuess.on_click
                     def ActionGuess(selfbutton):
                         clear_output(True)
-                        plt.close()
-                        display(widgets.HBox(
-                            (ButtonRetrievePara, ButtonSavePara, ButtonGuess, ButtonFit, ButtonSaveModel)))
+                        display(widgets.HBox((
+                            ButtonRetrievePara, ButtonSavePara,
+                            ButtonGuess, ButtonFit, ButtonSaveModel)))
                         try:
                             display(self.pars)
 
                             # Current guess
                             self.init = self.mod.eval(self.pars, x=x)
 
-                            fig, ax = plt.subplots(figsize=(16, 6))
-                            ax.grid()
-                            ax.plot(x, y, label="Data")
-                            ax.plot(x, self.init, label='Current guess')
-                            ax.legend()
-                            plt.show()
+                            # Bokeh plot
+                            source = ColumnDataSource(
+                                data=dict(
+                                    x=x,
+                                    y=y,
+                                    y_guess=self.init,
+                                ))
+
+                            # Create figure
+                            TOOLTIPS = [
+                                (f"{x_axis} (eV)", "$x"),
+                                (y_axis, "$y"),
+
+                            ]
+
+                            p = figure(
+                                height=600, width=800,
+                                tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
+                                toolbar_location="above",
+                                tooltips=TOOLTIPS,
+                                x_axis_label=x_axis + "(eV)",
+                                y_axis_label=y_axis
+                            )
+
+                            p.line("x", "y", source=source, line_alpha=0.6,
+                                   legend_label="Data",
+                                   line_color=self.matplotlib_colours[0])
+                            p.line("x", "y_guess", source=source,
+                                   legend_label="Initial guess",
+                                   line_color=self.matplotlib_colours[1])
+
+                            # Show figure
+                            show(p)
+
                         except Exception as e:
                             raise e
 
                     @ButtonFit.on_click
                     def ActionFit(selfbutton):
                         clear_output(True)
-                        display(widgets.HBox(
-                            (ButtonRetrievePara, ButtonSavePara, ButtonGuess, ButtonFit, ButtonSaveModel)))
+                        display(widgets.HBox((ButtonRetrievePara, ButtonSavePara,
+                                              ButtonGuess, ButtonFit, ButtonSaveModel
+                                              )))
 
                         # Current guess
                         self.init = self.mod.eval(self.pars, x=x)
@@ -4291,13 +4074,13 @@ class Interface():
                         # Retrieve the interval
                         try:
                             i = int(
-                                np.where(self.used_df_fit[xcol] == interval[0])[0])
+                                np.where(self.used_df_fit[x_axis] == interval[0])[0])
                         except TypeError:
                             i = 0
 
                         try:
                             j = int(
-                                np.where(self.used_df_fit[xcol] == interval[1])[0])
+                                np.where(self.used_df_fit[x_axis] == interval[1])[0])
                         except TypeError:
                             j = -1
 
@@ -4333,21 +4116,24 @@ class Interface():
                         display(self.out)
 
                         # Check the stats of the fit
-                        chisq, p = chisquare(
-                            self.out.data, self.out.best_fit, ddof=(self.out.nfree))
-                        setattr(self.used_datasets, "chisq", chisq)
-                        setattr(self.used_datasets, "p", p)
+                        try:
+                            chisq, p = chisquare(
+                                self.out.data, self.out.best_fit, ddof=(self.out.nfree))
+                            setattr(self.used_datasets, "chisq", chisq)
+                            setattr(self.used_datasets, "p", p)
 
-                        print(
-                            f"Sum of squared residuals : {np.sum(self.out.residual**2)}, lmfit chisqr : {self.out.chisqr}")
-                        print(
-                            f"Sum of squared residuals/nfree : {np.sum(self.out.residual**2)/(self.out.nfree)}, lmfit redchisqr : {self.out.redchi}")
+                            print(
+                                f"Sum of squared residuals : {np.sum(self.out.residual**2)}, lmfit chisqr : {self.out.chisqr}")
+                            print(
+                                f"Sum of squared residuals/nfree : {np.sum(self.out.residual**2)/(self.out.nfree)}, lmfit redchisqr : {self.out.redchi}")
 
-                        # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chisquare.html
-                        print(
-                            f"Scipy Chi square for Poisson distri = {chisq}, 1 - p = {1 - p}")
-                        print(
-                            f"lmfit chisqr divided iter by expected : {np.sum((self.out.residual**2)/self.out.best_fit)}")
+                            # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chisquare.html
+                            print(
+                                f"Scipy Chi square for Poisson distri = {chisq}, 1 - p = {1 - p}")
+                            print(
+                                f"lmfit chisqr divided iter by expected : {np.sum((self.out.residual**2)/self.out.best_fit)}")
+                        except ValueError:
+                            print("Could not compute chi square.")
 
                         r_factor = 100 * \
                             (np.sum(self.out.residual**2)/np.sum(self.out.data**2))
@@ -4360,8 +4146,8 @@ class Interface():
 
                         axes[0, 0].plot(x, y, label="Data")
                         axes[0, 0].plot(x, self.out.best_fit, label='Best fit')
-                        axes[0, 0].set_xlabel(xcol, fontweight='bold')
-                        axes[0, 0].set_ylabel(ycol, fontweight='bold')
+                        axes[0, 0].set_xlabel(x_axis, fontweight='bold')
+                        axes[0, 0].set_ylabel(y_axis, fontweight='bold')
                         axes[0, 0].set_title(
                             f"Best fit - {self.used_datasets.filename}")
                         axes[0, 0].legend()
@@ -4369,13 +4155,13 @@ class Interface():
                         # Residuals
                         axes[1, 0].set_title("Residuals")
                         axes[1, 0].scatter(x, self.out.residual, s=0.5)
-                        axes[1, 0].set_xlabel(xcol, fontweight='bold')
-                        axes[1, 0].set_ylabel(ycol, fontweight='bold')
+                        axes[1, 0].set_xlabel(x_axis, fontweight='bold')
+                        axes[1, 0].set_ylabel(y_axis, fontweight='bold')
 
                         axes[1, 1].set_title("Residuals")
                         axes[1, 1].scatter(x, self.out.residual, s=0.5)
-                        axes[1, 1].set_xlabel(xcol, fontweight='bold')
-                        axes[1, 1].set_ylabel(ycol, fontweight='bold')
+                        axes[1, 1].set_xlabel(x_axis, fontweight='bold')
+                        axes[1, 1].set_ylabel(y_axis, fontweight='bold')
 
                         # Detailed plot
                         axes[0, 1].set_title("Best fit - Detailed")
@@ -4396,8 +4182,8 @@ class Interface():
                             axes[0, 1].plot(
                                 x, self.comps[f"P{i}_"], label=f"Peak nb {i}")
 
-                        axes[0, 1].set_xlabel(xcol, fontweight='bold')
-                        axes[0, 1].set_ylabel(ycol, fontweight='bold')
+                        axes[0, 1].set_xlabel(x_axis, fontweight='bold')
+                        axes[0, 1].set_ylabel(y_axis, fontweight='bold')
                         axes[0, 1].legend()
                         plt.tight_layout()
 
@@ -4457,14 +4243,13 @@ class Interface():
                             try:
                                 setattr(self.used_datasets,
                                         "confidence_intervals", self.ci)
-                                self.used_datasets.pickle()
                             except Exception as E:
                                 print("Confidence intervals could not be saved.\n")
                                 raise E
 
                         @ButtonParaSpace.on_click
                         def ActionParaSpace(selfbutton):
-                            return self.explore_params(i, j, xcol, ycol)
+                            return self.explore_params(i, j, x_axis, y_axis)
 
                     @ButtonSaveModel.on_click
                     def ActionSave(selfbutton):
@@ -4493,12 +4278,7 @@ class Interface():
                         except Exception as e:
                             raise e
 
-                        try:
-                            self.used_datasets.pickle()
-
-                        except Exception as e:
-                            print("Could not save the class instance with pickle().")
-                            raise e
+                    ButtonGuess.click()
 
                 self._list_parameters_fit = interactive(
                     InitPara,
@@ -4526,14 +4306,14 @@ class Interface():
 
         except (AttributeError, KeyError):
             plt.close()
-            if ycol == "value":
+            if y_axis == "value":
                 print("Please select a column.")
             else:
                 print(f"Wrong Dataset and column combination !")
         except TypeError:
             print("This peak distribution is not yet working, sorry.")
 
-    def explore_params(self, i, j, xcol, ycol):
+    def explore_params(self, i, j, x_axis, y_axis):
         """
         To execute after a fit, allows one to explore the parameter space
         with the emcee Markov Monte carlo chain.
@@ -4551,8 +4331,8 @@ class Interface():
         """
         try:
 
-            y = self.used_df_fit[ycol].values[i:j]
-            x = self.used_df_fit[xcol].values[i:j]
+            y = self.used_df_fit[y_axis].values[i:j]
+            x = self.used_df_fit[x_axis].values[i:j]
 
             self.mi = self.out
             self.mi.params.add('__lnsigma', value=np.log(
@@ -4567,8 +4347,11 @@ class Interface():
             plt.show()
             plt.close()
 
-            self.emcee_plot = corner.corner(self.resi.flatchain, labels=self.resi.var_names, truths=list(
-                self.resi.params.valuesdict().values()))
+            self.emcee_plot = corner.corner(
+                self.resi.flatchain,
+                labels=self.resi.var_names,
+                truths=list(self.resi.params.valuesdict().values())
+            )
             plt.savefig(
                 f"{self.folders[3]}{self.used_datasets.filename}_corner_plot.pdf")
             plt.savefig(
@@ -4595,7 +4378,11 @@ class Interface():
             for name, param in self.p.items():
                 if self.resi.params[name].stderr:
                     print(fmt(
-                        name, param.value, self.resi.params[name].value, self.resi.params[name].stderr))
+                        name,
+                        param.value,
+                        self.resi.params[name].value,
+                        self.resi.params[name].stderr
+                    ))
 
             print('\nError Estimates from emcee    ')
             print('------------------------------------------------------')
@@ -4615,7 +4402,7 @@ class Interface():
 
         except (AttributeError, KeyError):
             plt.close()
-            if ycol == "value":
+            if y_axis == "value":
                 print("Please select a column.")
             else:
                 print(f"Wrong Dataset and column combination !")
@@ -4645,7 +4432,7 @@ class Interface():
         elif check_plot == "Plot" and len(spec_number) == 1:
             # Bokeh plot
             try:
-                # Add line
+                # Create source
                 df = getattr(spec_number[0], plot_df)
 
                 source = ColumnDataSource(
@@ -4796,245 +4583,26 @@ class Interface():
             )
 
             # Show figure
-            export_png(p, filename=self.folders[3]+"plot.png")
+            # export_png(p, filename=self.folders[3]+"plot.png")
 
             show(column(p, select))
-
-        elif check_plot == "3D" and len(spec_number) > 1:
-            print("Please pick a valid range for the x axis.")
-            # try:
-            #     T = [int(C.logbook_entry["Temp (K)"]) for C in spec_number]
-            #     print("The color is function of the temperature for each Dataset.")
-            # except:
-            #     print("No valid logbook entry for the temperature found as [Temp (K)], the color of the plots will be random.")
-            #     T = False
-
-            try:
-                # Create a df that spans the entire energy range
-                self.merged_values = pd.DataFrame({
-                    x: self.new_energy_column
-                })
-
-                for C in spec_number:
-                    used_df = getattr(C, plot_df)
-                    yvalues = pd.DataFrame(
-                        {x: used_df[x].values, y: used_df[y].values})
-
-                    for v in self.merged_values[x].values:
-                        if v not in yvalues[x].values:
-                            yvalues = yvalues.append({x: v}, ignore_index=True).sort_values(
-                                by=[x]).reset_index(drop=True)
-
-                    self.merged_values[str(C.filename) +
-                                       "_"+str(y)] = yvalues[y]
-
-                def three_d_plot(xname, yname, zname, dist, elev, azim, cmap_style, title, interval):
-                    try:
-                        # Get the data
-                        clear_output(True)
-                        v1 = int(
-                            np.where(self.new_energy_column == interval[0])[0])
-                        v2 = int(
-                            np.where(self.new_energy_column == interval[1])[0])
-
-                        data = self.merged_values.copy()[v1:v2]
-                        data.index = data["Energy"]
-                        del data["Energy"]
-
-                        display(data)
-
-                        df = data.unstack().reset_index()
-                        df.columns = ["X", "Y", "Z"]
-
-                        df['X'] = pd.Categorical(df['X'])
-                        df['X'] = df['X'].cat.codes
-
-                        NonNanValues = [j for j in df["Z"] if not np.isnan(j)]
-
-                        # Make the plot
-                        fig = plt.figure(figsize=(15, 10))
-                        ax = fig.add_subplot(111, projection='3d')
-                        ax.dist = dist
-                        ax.elev = elev
-                        ax.azim = azim
-
-                        # Add a color bar which maps values to colors. viridis or jet
-                        surf = ax.plot_trisurf(df['Y'], df['X'], df['Z'], cmap=cmap_style, linewidth=0.2, vmin=min(
-                            NonNanValues), vmax=max(NonNanValues))
-                        colorbarplot = fig.colorbar(
-                            surf, shrink=0.6, label="Colorbar")
-
-                        ax.set_xlabel(xname)
-                        ax.set_ylabel(yname)
-                        ax.set_zlabel(zname)
-                        ax.set_title(title, fontsize=20)
-
-                        fig.tight_layout()
-                        plt.savefig(f"{self.folders[3]}{title}.pdf")
-                        plt.savefig(f"{self.folders[3]}{title}.png")
-                        plt.show()
-
-                    except IndexError:
-                        print("Please pick a valid range for the x axis.")
-
-                _list_3D = interactive(
-                    three_d_plot,
-                    xname=widgets.Text(
-                        value="Binding energy",
-                        placeholder="x_axis",
-                        description='Name of x axis:',
-                        disabled=False,
-                        continuous_update=False,
-                        style={'description_width': 'initial'}),
-                    yname=widgets.Text(
-                        value="Temperature",
-                        placeholder="y_axis",
-                        description='Name of y axis:',
-                        disabled=False,
-                        continuous_update=False,
-                        style={'description_width': 'initial'}),
-                    zname=widgets.Text(
-                        value="normalized EXAFS intensity",
-                        placeholder="zaxis",
-                        description='Name of z axis:',
-                        disabled=False,
-                        continuous_update=False,
-                        style={'description_width': 'initial'}),
-                    title=widgets.Text(
-                        value="Evolution of edge with temperature",
-                        placeholder="3D plot",
-                        description='title:',
-                        disabled=False,
-                        continuous_update=False,
-                        style={'description_width': 'initial'}),
-                    dist=widgets.IntSlider(
-                        value=10,
-                        min=0,
-                        max=50,
-                        step=1,
-                        description='Distance:',
-                        disabled=False,
-                        continuous_update=False,
-                        orientation="horizontal",
-                        readout=True,
-                        readout_format="d",
-                        style={'description_width': 'initial'}),
-                    elev=widgets.IntSlider(
-                        value=45,
-                        min=0,
-                        max=90,
-                        step=1,
-                        description='Elevation:',
-                        disabled=False,
-                        continuous_update=False,
-                        orientation="horizontal",
-                        readout=True,
-                        readout_format="d",
-                        style={'description_width': 'initial'}),
-                    azim=widgets.IntSlider(
-                        value=285,
-                        min=0,
-                        max=360,
-                        step=1,
-                        description='Azimuthal:',
-                        disabled=False,
-                        continuous_update=False,
-                        orientation="horizontal",
-                        readout=True,
-                        readout_format="d",
-                        style={'description_width': 'initial'}),
-                    cmap_style=widgets.Dropdown(
-                        options=[("Viridis", plt.cm.viridis), ("Jet", plt.cm.jet), ("Plasma", plt.cm.plasma), (
-                            "Cividis", plt.cm.cividis), ("Magma", plt.cm.magma), ("Inferno", plt.cm.inferno)],
-                        description='Select the style:',
-                        continuous_update=False,
-                        disabled=False,
-                        style={'description_width': 'initial'}),
-                    interval=widgets.FloatRangeSlider(
-                        min=self.new_energy_column[0],
-                        value=[self.new_energy_column[-2],
-                               self.new_energy_column[-1]],
-                        max=self.new_energy_column[-1],
-                        step=self.interpol_step,
-                        description='Energy range (eV):',
-                        disabled=False,
-                        continuous_update=False,
-                        orientation="horizontal",
-                        readout=True,
-                        readout_format='.2f',
-                        style={'description_width': 'initial'},
-                        layout=Layout(width="50%", height='40px')))
-                widget_list_3D = widgets.VBox([widgets.HBox(_list_3D.children[:3]), widgets.HBox(
-                    _list_3D.children[3:6]), widgets.HBox(_list_3D.children[6:9]), _list_3D.children[-1]])
-                display(widget_list_3D)
-
-            except (AttributeError, KeyError):
-                plt.close()
-                print(f"Wrong Dataset and column combination !")
-            except PermissionError:
-                plt.close()
-                print(f"Figure with same name opened in another program.")
 
         elif len(spec_number) == 0:
             print("Select more datasets.")
 
-        elif check_plot == "3D" and len(spec_number) < 2:
-            print("Select more datasets.")
-
     # All handler functions
 
-    def filename_handler(self, change):
-        """
-        Handles changes on the widget used for the definition of the
-        data_folder's name
-        """
-        if change.new:
-            self._list_widgets_init.children[0].disabled = True
-            self._list_widgets_init.children[2].disabled = False
-
-        elif not change.new:
-            self._list_widgets_init.children[0].disabled = False
-            self._list_widgets_init.children[2].disabled = True
-
-    def create_handler(self, change):
-        """Handles changes on the widget used for the creation of subfolders"""
-
-        if change.new:
-            for w in self._list_widgets_init.children[3:5]:
-                w.disabled = False
-            self._list_widgets_init.children[1].disabled = True
-            self._list_widgets_init.children[-3].disabled = False
-            self._list_widgets_init.children[-2].disabled = False
-
-        elif not change.new:
-            for w in self._list_widgets_init.children[3:5]:
-                w.disabled = True
-            self._list_widgets_init.children[1].disabled = False
-            self._list_widgets_init.children[-3].disabled = True
-            self._list_widgets_init.children[-2].disabled = True
-
-    def delete_handler(self, change):
+    def tool_handler(self, change):
         """
         Handles changes on the widget used for the deletion of previous work
+        and beginning of data treatment
         """
 
-        if not change.new:
-            self._list_widgets_init.children[-2].disabled = False
-        elif change.new:
-            self._list_widgets_init.children[-2].disabled = True
+        if change.new == "default":
+            self._list_widgets_init.children[0].disabled = False
 
-    def work_handler(self, change):
-        """
-        Handles changes on the widget used for marking the beginning of data
-        treatment
-        """
-        if change.new:
-            for w in self._list_widgets_init.children[:-2]:
-                w.disabled = True
-        elif not change.new:
-            for w in self._list_widgets_init.children[1:5]:
-                w.disabled = False
-            self._list_widgets_init.children[-3].disabled = False
+        else:
+            self._list_widgets_init.children[0].disabled = True
 
     def reduce_bool_handler(self, change):
         """

@@ -5,18 +5,19 @@ with open("thorondor/README.md", "r") as fh:
 
 setuptools.setup(
     name="thorondor",
-    version="0.3.30",
-    description="XANES package using jupyter widgets",
-    author="David Simonne and Andrea Martini",
-    author_email="david.simonne@synchrotron-soleil.fr, andrea.martini@unito.it",
-    url="https://pypi.org/project/thorondor/",
+    version="0.4.0",
+    description="XPS data analysis package using jupyter widgets",
+    author="David Simonne",
+    author_email="david.simonne@synchrotron-soleil.fr",
+    url="https://github.com/DSimonne/thorondor/tree/diamond/",
+    data_files=[('', ["licence.txt"])],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
 
-    keywords = "XANES GUI lmfit widgets",
+    keywords = "XPS GUI lmfit widgets",
     long_description=long_description,
     long_description_content_type="text/markdown",
     packages=setuptools.find_packages(),

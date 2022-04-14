@@ -102,7 +102,7 @@ class DiamondDataset:
                 except Exception as E:
                     raise E
 
-        # Create Concatenated df with all the data
+        # Create Concatenated df with all the df together
         try:
             if len(self.df_names) == 1:
                 self.Concatenated_df = getattr(self, self.df_names[0]).copy()
@@ -155,3 +155,29 @@ class DiamondDataset:
 
     def __repr__(self):
         return self.filename
+
+    def __str__(self):
+        return repr(self)
+
+    def pickle_dataset(self, path):
+        """Use the pickle module to save the classes"""
+        try:
+            with open(path, 'wb') as f:
+                pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
+        except PermissionError:
+            print("""
+                Permission denied, You cannot save this file because you \
+                are not its creator. The changes are updated for this session \
+                and you can still plot figures but once you exit the program, \
+                all changes will be erased.
+                """)
+
+    @staticmethod
+    def unpickle(path):
+        """
+        Use the pickle module to load the classes
+        :param file_path: absolute path to pickle file
+        """
+
+        with open(path, 'rb') as f:
+            return pickle.load(f)
