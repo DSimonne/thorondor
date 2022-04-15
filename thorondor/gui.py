@@ -7,6 +7,7 @@ import shutil
 import math
 import pickle
 import tables as tb
+from prettytable import PrettyTable
 
 import lmfit
 from lmfit import minimize, Parameters, Parameter
@@ -36,18 +37,10 @@ output_notebook()
 class Interface():
     """
     This  class is a Graphical User Interface (gui) that is meant to be used
-    to process important amount of XAS datasets that focus on the same energy
-    range and absoption edge.
-    There are two ways of initializing the procedure in a jupyter notebook:
-        _ gui = thorondor.gui.Interface(); One will have to write the name of
-            the data folder in which all his datasets are saved.
-        _ gui = thorondor.gui.Interface.get_class_list(data_folder =
-            "<yourdata_folder>") if one has already worked on a Dataset and
-            wishes to retrieve his work
+    to process important amount of XPS datasets.
 
     This class makes extensive use of the ipywidgets and is thus meant to
     be used with a jupyter notebook.
-    Additional informations are provided in the "ReadMe" tab of the gui.
     """
 
     def __init__(self, class_list=False):
@@ -115,13 +108,13 @@ class Interface():
         # Widgets for the data visualisation
         self.tab_data = interactive(
             self.print_data,
-            spec=widgets.Dropdown(
+            used_dataset=widgets.Dropdown(
                 options=self.class_list,
                 description='Select the Dataset:',
                 disabled=True,
                 style={'description_width': 'initial'},
                 layout=Layout(width='60%')),
-            printed_df=widgets.Dropdown(
+            df=widgets.Dropdown(
                 options=[
                     ("Renamed data", "df"),
                     ("Shifted data", "shifted_df"),
@@ -161,7 +154,7 @@ class Interface():
 
         self._list_shift = interactive(
             self.energy_shift,
-            spec=widgets.Dropdown(
+            used_dataset=widgets.Dropdown(
                 options=self.class_list,
                 description="Choose dataset :",
                 disabled=False,
@@ -212,7 +205,7 @@ class Interface():
 
         self._list_deglitching = interactive(
             self.correction_deglitching,
-            spec=widgets.Dropdown(
+            used_dataset=widgets.Dropdown(
                 options=self.class_list,
                 description='Select the Dataset:',
                 disabled=False,
@@ -266,7 +259,7 @@ class Interface():
                 description='Pick an y-axis',
                 disabled=False,
                 style={'description_width': 'initial'}),
-            tipo=widgets.Dropdown(
+            order=widgets.Dropdown(
                 options=[
                     ("Linear", "linear"),
                     ("Quadratic", "quadratic"),
@@ -284,7 +277,7 @@ class Interface():
 
         self._list_errors_extraction = interactive(
             self.errors_extraction,
-            spec=widgets.Dropdown(
+            used_dataset=widgets.Dropdown(
                 options=self.class_list,
                 description='Dataset:',
                 disabled=False,
@@ -383,7 +376,7 @@ class Interface():
                 disabled=False,
                 style={'description_width': 'initial'},
                 layout=Layout(display="flex", flex_flow='column', width="50%")),
-            spec=widgets.Dropdown(
+            used_dataset=widgets.Dropdown(
                 options=self.class_list,
                 description='Dataset to plot between the Datasets to analyze:',
                 disabled=False,
@@ -437,29 +430,9 @@ class Interface():
             self._list_LCF.children[-1]
         ])
 
-        self._list_save_as_nexus = interactive(
-            self.save_as_nexus,
-            spec_number=widgets.SelectMultiple(
-                options=self.class_list,
-                value=self.class_list[0:1],
-                rows=5,
-                description='Spectra to save:',
-                disabled=False,
-                style={'description_width': 'initial'},
-                layout=Layout(display="flex", flex_flow='column')),
-            save_bool=widgets.Checkbox(
-                value=False,
-                description='Save',
-                disabled=False,
-                style={'description_width': 'initial'}))
-        self.widget_list_save_as_nexus = widgets.VBox([
-            widgets.HBox(self._list_save_as_nexus.children[:2]),
-            self._list_save_as_nexus.children[-1]
-        ])
-
         self._list_norm_data = interactive(
             self.norm_data,
-            spec=widgets.Dropdown(
+            used_dataset=widgets.Dropdown(
                 options=self.class_list,
                 description='Choose dataset:',
                 disabled=False,
@@ -541,7 +514,7 @@ class Interface():
                 disabled=True,
                 style={'description_width': 'initial'},
                 layout=Layout(display="flex", flex_flow='column')),
-            used_datasets=widgets.Dropdown(
+            used_dataset=widgets.Dropdown(
                 options=self.class_list,
                 description="Dataset to plot between the Datasets to analyze:",
                 disabled=True,
@@ -896,13 +869,13 @@ class Interface():
         # Widgets for the fit,
         self._list_define_fitting_df = interactive(
             self.define_fitting_df,
-            spec=widgets.Dropdown(
+            used_dataset=widgets.Dropdown(
                 options=self.class_list,
                 description='Select the Dataset:',
                 disabled=True,
                 style={'description_width': 'initial'},
                 layout=Layout(width='60%')),
-            printed_df=widgets.Dropdown(
+            df=widgets.Dropdown(
                 options=[
                     ("Renamed data", "df"),
                     ("Shifted data", "shifted_df"),
@@ -914,7 +887,7 @@ class Interface():
                 description='Select the dataframe:',
                 disabled=True,
                 style={'description_width': 'initial'}),
-            show=widgets.Checkbox(
+            show_bool=widgets.Checkbox(
                 value=False,
                 description='Fix dataframe.',
                 disabled=True,
@@ -1261,7 +1234,6 @@ class Interface():
             self._list_LCF.children[0].options = self.class_list
             self._list_LCF.children[1].options = self.class_list
             self._list_LCF.children[2].options = self.class_list
-            self._list_save_as_nexus.children[0].options = self.class_list
 
             self._list_tab_reduce_method.children[1].options = self.class_list
             self._list_tab_reduce_method.children[2].options = self.class_list
@@ -1350,7 +1322,6 @@ class Interface():
             self._list_LCF.children[0].options = self.class_list
             self._list_LCF.children[1].options = self.class_list
             self._list_LCF.children[2].options = self.class_list
-            self._list_save_as_nexus.children[0].options = self.class_list
 
             self._list_tab_reduce_method.children[1].options = self.class_list
             self._list_tab_reduce_method.children[2].options = self.class_list
@@ -1386,8 +1357,9 @@ class Interface():
 
                 except EOFError:
                     print(
-                        f"{n} is empty, restart the procedure from the beginning, \
-                        this may be due to a crash of Jupyter.")
+                        f"{C.filename} is empty."
+                        "Restart the procedure from the beginning,"
+                        "this may be due to a crash of Jupyter.")
                 except FileNotFoundError:
                     print(f"The Class does not exist for {n}")
 
@@ -1410,7 +1382,6 @@ class Interface():
             self._list_LCF.children[0].options = self.class_list
             self._list_LCF.children[1].options = self.class_list
             self._list_LCF.children[2].options = self.class_list
-            self._list_save_as_nexus.children[0].options = self.class_list
 
             self._list_tab_reduce_method.children[1].options = self.class_list
             self._list_tab_reduce_method.children[2].options = self.class_list
@@ -1431,24 +1402,54 @@ class Interface():
 
     # Visualization interactive function
 
-    def print_data(self, spec, printed_df):
+    def print_data(self, used_dataset, df):
         """
-        Displays the pandas.DataFrame associated to each Dataset,
+        Print the main attributes of each DataFrame in the object and displays
+        the DataFrame selected.
+
+        :param used_dataset: Dataset used
+        :param df: DataFrame used
         """
+
+        # print a pretty table of dataset attributes
+        table = [
+            ["DataFrame", "Counting time",
+             "Iterations",
+             "Spectra shape",
+             "Energy step",
+             "Pass energy", "Photon energy",
+             # "Work function"
+             ]
+        ]
+        tab = PrettyTable(table[0])
+        for s in used_dataset.df_names:
+            try:
+                tab.add_rows([[
+                    s,
+                    getattr(used_dataset, s[:-3]+"_count_time"),
+                    int(getattr(used_dataset, s[:-3]+"_iterations")),
+                    getattr(used_dataset, s[:-3]+"_spectra").shape,
+                    getattr(used_dataset, s[:-3]+"_step_energy"),
+                    int(getattr(used_dataset, s[:-3]+"_pass_energy")),
+                    int(np.round(getattr(used_dataset,
+                        s[:-3]+"_photon_energy"), 0)),
+                    # getattr(used_dataset, s[:-3]+"_work_function"),
+                ]])
+            except AttributeError:
+                pass
+        print(tab)
 
         try:
-            self.used_dataset = spec
-            self.used_df = getattr(self.used_dataset, printed_df)
-            self.used_df_name = printed_df
-            display(self.used_df)
+            # display currently selected data frame
+            display(getattr(used_dataset, df))
 
         except AttributeError:
-            clear_output(True)
             print(f"Wrong Dataset and column combination !")
 
     # Tools global interactive function
 
     def treat_data(self, method, plot_bool):
+        """Lauch data reduction method depending on method"""
         if method == "shift" and plot_bool:
             display(self.widget_list_shift)
         if method == "deglitching" and plot_bool:
@@ -1457,8 +1458,6 @@ class Interface():
             display(self.widget_list_errors_extraction)
         if method == "LCF" and plot_bool:
             display(self.widget_list_LCF)
-        if method == "nexus" and plot_bool:
-            display(self.widget_list_save_as_nexus)
         if method == "norm" and plot_bool:
             display(self.widget_list_norm_data)
         if not plot_bool:
@@ -1466,15 +1465,20 @@ class Interface():
             clear_output(True)
             plt.close()
 
-    def energy_shift(self, spec, df, x, y):
+    def energy_shift(self, used_dataset, df, x, y):
         """
         Allows one to shift each Dataset by a certain amount to align on the
         Fermi energy, shift is performed on all the Dataset dataframes
+
+        :param used_dataset: Dataset used
+        :param df: DataFrame used
+        :param x: x axis
+        :param y: y axis
         """
 
         try:
-            self.used_df = getattr(spec, df)  # not a copy !
-            self.used_dataset = spec
+            self.used_dataset = used_dataset
+            self.used_df = getattr(used_dataset, df)  # not a copy !
             v1, v2 = min(self.used_df[x].values), max(self.used_df[x].values)
 
             @interact(
@@ -1519,6 +1523,10 @@ class Interface():
                     data=dict(
                         x=self.shift_df[x],
                         y=self.shift_df[y],
+                    ))
+
+                source_smooth = ColumnDataSource(
+                    data=dict(
                         x_smooth=self.shift_df[x],
                         y_smooth=y_smooth,
                     ))
@@ -1540,7 +1548,6 @@ class Interface():
                     tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
                     toolbar_location="above",
                     tooltips=TOOLTIPS,
-                    x_axis_location="above",
                     x_axis_label=x + "(eV)",
                     y_axis_label=y,
                     # title=title,
@@ -1548,17 +1555,24 @@ class Interface():
 
                 # Add line
                 p.line("x", "y", source=source, legend_label="Data",
-                       color=self.matplotlib_colours[0])
-                p.line("x_smooth", "y_smooth", source=source, line_alpha=0.5,
+                       color=self.matplotlib_colours[0], line_alpha=0.8,
+                       hover_line_alpha=1.0, hover_line_width=2.0,
+                       muted_alpha=0.1)
+
+                p.line("x_smooth", "y_smooth", source=source_smooth,
                        legend_label="Smoothed data",
-                       color=self.matplotlib_colours[0])
+                       color=self.matplotlib_colours[1], line_alpha=0.6,
+                       hover_line_alpha=1.0, hover_line_width=2.0,
+                       muted_alpha=0.1)
 
                 # Add derivative plot
                 p.line("xp", "yp", source=sourcep, legend_label='Derivative',
-                       color=self.matplotlib_colours[1])
+                       color=self.matplotlib_colours[2], line_alpha=0.8,
+                       hover_line_alpha=1.0, hover_line_width=2.0,
+                       muted_alpha=0.1)
 
                 # Hide plot by clicking on legend
-                p.legend.click_policy = "hide"
+                p.legend.click_policy = "mute"
 
                 # Show figure
                 show(p)
@@ -1604,16 +1618,22 @@ class Interface():
         except (AttributeError, KeyError):
             print(f"Wrong Dataset and column combination !")
 
-    def correction_deglitching(self, spec, df, pts, x, y, tipo):
+    def correction_deglitching(self, used_dataset, df, pts, x, y, order):
         """
         Allows one to delete some to replace glitches in the data by using
         linear, square or cubic interpolation.
+
+        :param used_dataset: Dataset used
+        :param df: DataFrame used
+        :param pts: extra points outside range for data interpolation
+        :param x: x axis
+        :param y: y axis
+        :param order: order of polynom for interpolation
         """
         try:
-            self.used_datasets = spec
-            self.used_df_type = df
-            used_df = getattr(self.used_datasets, self.used_df_type)
-            used_df[y]
+            self.used_dataset = used_dataset
+            self.used_df_name = df
+            used_df = getattr(self.used_dataset, self.used_df_name)
 
             @interact(
                 interval=widgets.IntRangeSlider(
@@ -1622,7 +1642,6 @@ class Interface():
                     max=len(used_df[x]) - 1 - pts,
                     step=1,
                     description='Range (indices):',
-                    disabled=False,
                     continuous_update=False,
                     orientation="horizontal",
                     readout=True,
@@ -1634,16 +1653,19 @@ class Interface():
                     plt.close()
 
                     # Assign values
-                    energy = used_df[x]
-                    mu = used_df[y]
+                    energy, mu = used_df[x], used_df[y]
                     v1, v2 = interval
 
+                    energy_range_1 = energy[v1 - pts:v1]
+                    energy_range_2 = energy[v2:v2 + pts]
+                    intensity_range_1 = mu[v1 - pts:v1]
+                    intensity_range_2 = mu[v2:v2 + pts]
+
                     # Plot
-                    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
-                    axs[0].set_xlabel("Energy")
-                    axs[0].set_ylabel('Intensity')
-                    axs[0].set_title('Raw Data')
-                    axs[0].tick_params(direction='in', labelsize=15, width=2)
+                    fig, axs = plt.subplots(1, 2, figsize=(16, 6))
+                    axs[0].set_title('Raw Data', fontsize=20)
+                    axs[0].set_xlabel("Energy", fontsize=15)
+                    axs[0].set_ylabel('Intensity', fontsize=15)
 
                     axs[0].plot(energy, mu, label='Data')
                     axs[0].plot(energy[v1:v2], mu[v1:v2], '-o',
@@ -1653,33 +1675,33 @@ class Interface():
                     axs[0].axvline(x=energy[v2], color='black', linestyle='--')
                     axs[0].legend()
 
-                    axs[1].set_title('Region Zoom')
-                    axs[1].set_xlabel("Energy")
-                    axs[1].set_ylabel('Intensity')
+                    axs[1].set_title('Zoom', fontsize=20)
+                    axs[1].set_xlabel("Energy", fontsize=15)
+                    axs[1].set_ylabel('Intensity', fontsize=15)
                     axs[1].tick_params(direction='in', labelsize=15, width=2)
 
                     axs[1].plot(energy[v1:v2], mu[v1:v2], 'o', color='orange')
-                    axs[1].plot(energy[v1 - pts:v1],
-                                mu[v1 - pts:v1], '-o', color='C0')
-                    axs[1].plot(energy[v2:v2 + pts],
-                                mu[v2:v2 + pts], '-o', color='C0')
+                    axs[1].plot(energy_range_1, intensity_range_1,
+                                '-o', color='C0')
+                    axs[1].plot(energy_range_2, intensity_range_2,
+                                '-o', color='C0')
 
                     axs[1].yaxis.set_label_position("right")
                     axs[1].yaxis.tick_right()
 
                     # Interpolate
-                    energy_range_1 = energy[v1 - pts:v1]
-                    energy_range_2 = energy[v2:v2 + pts]
-                    intensity_range_1 = mu[v1 - pts:v1]
-                    intensity_range_2 = mu[v2:v2 + pts]
                     energy_range = np.concatenate(
-                        (energy_range_1, energy_range_2), axis=0)
+                        (energy_range_1, energy_range_2),
+                        axis=0
+                    )
                     intensity_range = np.concatenate(
-                        (intensity_range_1, intensity_range_2), axis=0)
+                        (intensity_range_1, intensity_range_2),
+                        axis=0
+                    )
 
                     Enew = energy[v1:v2]
                     f1 = interpolate.interp1d(
-                        energy_range, intensity_range, kind=tipo)
+                        energy_range, intensity_range, kind=order)
                     ITN = f1(Enew)
 
                     axs[1].plot(Enew, ITN, '--', color='green',
@@ -1687,18 +1709,18 @@ class Interface():
                     axs[1].legend()
 
                     ButtonDeglitch = widgets.Button(
-                        description="Deglich",
+                        description="Interpolate data",
                         layout=Layout(width='25%', height='35px'))
                     display(ButtonDeglitch)
 
                     @ButtonDeglitch.on_click
                     def ActionButtonDeglitch(selfbutton):
-                        C = self.used_datasets
-                        used_df = getattr(C, df)
+                        used_df = getattr(self.used_dataset, df)
                         used_df[y][v1:v2] = ITN
                         clear_output(True)
                         print(
-                            f"Degliched {C.filename}, energy Range: [{energy[v1]}, {energy[v2]}] (eV)")
+                            f"Degliched {self.used_dataset.filename}"
+                            f"Energy Range: [{energy[v1]}, {energy[v2]}] (eV)")
                         deglitch(interval)
                 except ValueError:
                     plt.close()
@@ -1715,7 +1737,7 @@ class Interface():
 
     def errors_extraction(
         self,
-        spec,
+        used_dataset,
         df,
         x_axis,
         y_axis,
@@ -1724,6 +1746,8 @@ class Interface():
         direction,
         compute
     ):
+        """
+        """
 
         def poly(x, y, deg):
             coef = np.polyfit(x, y, deg)
@@ -1733,8 +1757,8 @@ class Interface():
         if compute:
             try:
                 clear_output(True)
-                self.used_datasets, self.used_df_type = spec, df
-                used_df = getattr(self.used_datasets, self.used_df_type)
+                self.used_dataset, self.used_df_name = used_dataset, df
+                used_df = getattr(self.used_dataset, self.used_df_name)
                 x = used_df[x_axis]
                 y = used_df[y_axis]
 
@@ -1807,10 +1831,10 @@ class Interface():
                     used_df["Deviations"] = self.errors["Deviations"]
                     used_df["RMS"] = self.errors["RMS"]
                 except:
-                    setattr(self.used_datasets, self.used_df_type, pd.concat(
+                    setattr(self.used_dataset, self.used_df_name, pd.concat(
                         [used_df, self.errors], axis=1, sort=False))
 
-                display(getattr(self.used_datasets, self.used_df_type))
+                display(getattr(self.used_dataset, self.used_df_name))
 
             except (AttributeError, KeyError):
                 plt.close()
@@ -1827,7 +1851,18 @@ class Interface():
             print("Window cleared.")
             clear_output(True)
 
-    def LCF(self, ref_spectra, spec_number, spec, df_type, x, y, LCF_bool):
+    def LCF(
+        self,
+        ref_spectra,
+        spec_number,
+        used_dataset,
+        df_type,
+        x,
+        y,
+        LCF_bool
+    ):
+        """
+        """
         if LCF_bool and len(ref_spectra) > 1:
             self.ref_names = [f.filename for f in ref_spectra]
 
@@ -1858,8 +1893,8 @@ class Interface():
                         self.spec_df = [getattr(D, df_type).copy(
                         )[v1:v2] for D, v1, v2 in zip(spec_number, v1Data, v2Data)]
 
-                        self.used_df_LCF = self.spec_df[spec_number.index(
-                            spec)]
+                        self.used_df = self.spec_df[spec_number.index(
+                            used_dataset)]
 
                         # Import the references
                         self.ref_df = [getattr(f, df_type).copy()
@@ -1904,16 +1939,16 @@ class Interface():
                                     "--", label=f"reference {n}")
 
                         ax.plot(
-                            self.used_df_LCF[x], self.used_df_LCF[y], label=spec.filename)
+                            self.used_df[x], self.used_df[y], label=used_dataset.filename)
                         ax.legend()
                         plt.title("First visualization of the data")
                         plt.show()
 
                         # Check if all the references and data spectra have the same interval and nb of points
                         good_range_ref = [np.array_equal(
-                            df[x].values, self.used_df_LCF[x].values) for df in self.ref_df]
+                            df[x].values, self.used_df[x].values) for df in self.ref_df]
                         good_range_spec = [np.array_equal(
-                            df[x].values, self.used_df_LCF[x].values) for df in self.spec_df]
+                            df[x].values, self.used_df[x].values) for df in self.spec_df]
 
                         if all(good_range_ref) and all(good_range_spec):
                             print("""The energy ranges between the references and the data match.\nYou should shift the references so that the features are aligned in energy, and scale them so that the weight of each reference during the Linear Combination Fit is lower than 1.""")
@@ -2000,7 +2035,7 @@ class Interface():
                                         f"The weights for the references are {ref_weights}")
 
                                     r_factor = np.sum(
-                                        (self.used_df_LCF[y]-sum_ref_weights)**2) / np.sum((self.used_df_LCF[y])**2)
+                                        (self.used_df[y]-sum_ref_weights)**2) / np.sum((self.used_df[y])**2)
                                     print(f"R factor :{r_factor}")
                                     setattr(C, "ref_R_factor", r_factor)
 
@@ -2089,20 +2124,13 @@ class Interface():
             clear_output(True)
             print("Select at least two references, one Dataset that will serve to visualise the interpolation, and the list of datasets you would like to process.")
 
-    def save_as_nexus(self, spec_number, save_bool):
-        if save_bool:
-            for C in spec_number:
-                print(f"Saving as {C.filename} ... ")
-                C.to_nxs()
-                print(f"Saved as {C.filename}!", end="\n\n")
-
-    def norm_data(self, spec, df, x, y):
+    def norm_data(self, used_dataset, df, x, y):
         """Allows one to normalize the Dataset"""
 
         try:
-            self.used_df = getattr(spec, df)  # not a copy !
-            self.used_dataset = spec
+            self.used_dataset = used_dataset
             self.used_df_name = df
+            self.used_df = getattr(used_dataset, df)  # not a copy !
             v1, v2 = min(self.used_df[x].values), max(self.used_df[x].values)
 
             @interact(
@@ -2158,10 +2186,18 @@ class Interface():
                 )
 
                 # Add line
-                p.line("x", "y", source=source, legend_label="Data",
-                       color=self.matplotlib_colours[0], line_alpha=0.5)
+                p.line("x", "y", source=source,
+                       legend_label="Data",
+                       color=self.matplotlib_colours[0], line_alpha=0.8,
+                       hover_line_alpha=1.0, hover_line_width=2.0)
+
                 p.line("x", "y", source=source_interval,
-                       legend_label="Normalized data", color=self.matplotlib_colours[1])
+                       legend_label="Selected data range",
+                       color=self.matplotlib_colours[1], line_alpha=0.8,
+                       hover_line_alpha=1.0, hover_line_width=2.0)
+
+                # Hide plot by clicking on legend
+                p.legend.click_policy = "hide"
 
                 # Show figure
                 show(p)
@@ -2201,18 +2237,24 @@ class Interface():
         self,
         method,
         used_class_list,
-        used_datasets,
+        used_dataset,
         df,
         plot_bool
     ):
         """
         Define the reduction routine to follow depending on the
         Reduction widget state.
+
+        :param method:
+        :param used_class_list:
+        :param used_dataset:
+        :param df:
+        :param plot_bool:
         """
         try:
             self.used_class_list = used_class_list
-            self.used_datasets = used_datasets
-            self.used_dataset_position = used_class_list.index(used_datasets)
+            self.used_dataset = used_dataset
+            self.used_dataset_position = used_class_list.index(used_dataset)
             clear_output(True)
 
             # Update
@@ -2222,8 +2264,8 @@ class Interface():
             self._list_reduce_splines_derivative.children[0].value = "value"
 
             try:
-                self.used_df_type = df
-                used_df = getattr(self.used_datasets, self.used_df_type)
+                self.used_df_name = df
+                used_df = getattr(self.used_dataset, self.used_df_name)
 
             except (AttributeError, KeyError):
                 print(f"Wrong Dataset and column combination !")
@@ -2249,7 +2291,7 @@ class Interface():
         except ValueError:
             clear_output(True)
             print(
-                f"{used_datasets.filename} is not in the list of datasets to reduce.")
+                f"{used_dataset.filename} is not in the list of datasets to reduce.")
 
     # Reduction interactive sub-functions
     def reduce_LSF(self, y, interval, lam, p):
@@ -2269,7 +2311,7 @@ class Interface():
 
         try:
             number = self.used_dataset_position
-            df = self.used_df_type
+            df = self.used_df_name
 
             # Retrieve original data
             mu, energy, v1, v2 = [], [], [], []
@@ -2341,7 +2383,7 @@ class Interface():
             @ButtonSaveDataset.on_click
             def ActionSaveDataset(selfbutton):
                 # Save single Dataset without background in Class
-                C = self.used_datasets
+                C = self.used_dataset
                 IN = mu[number][v1[number]:v2[number]] / \
                     np.trapz(
                         difference, x=energy[number][v1[number]:v2[number]])
@@ -2488,7 +2530,10 @@ class Interface():
         """Reduce the background with chebyshev polynomails"""
 
         def chebyshev(x, y, d, n):
-            """Define a chebyshev polynomial using np.polynomial.chebyshev.fit method"""
+            """
+            Define a chebyshev polynomial using np.polynomial.chebyshev.fit
+            method
+            """
             w = (1/y) ** n
             p = np.polynomial.Chebyshev.fit(x, y, d, w=w)
 
@@ -2496,7 +2541,7 @@ class Interface():
 
         try:
             number = self.used_dataset_position
-            df = self.used_df_type
+            df = self.used_df_name
 
             # Retrieve original data
             mu, energy, v1, v2 = [], [], [], []
@@ -2568,7 +2613,7 @@ class Interface():
             @ButtonSaveDataset.on_click
             def ActionSaveDataset(selfbutton):
                 # Save single Dataset without background in Class
-                C = self.used_datasets
+                C = self.used_dataset
                 IN = mu[number][v1[number]:v2[number]] / \
                     np.trapz(
                         difference, x=energy[number][v1[number]:v2[number]])
@@ -2719,10 +2764,13 @@ class Interface():
             print("The selected energy range is wrong.")
 
     def reduce_polynoms(self, y, interval, sL):
-        """Reduce the background using a fixed number of points and Polynoms between them"""
+        """
+        Reduce the background using a fixed number of points and
+        Polynoms between them
+        """
         try:
             number = self.used_dataset_position
-            df = self.used_df_type
+            df = self.used_df_name
 
             # Retrieve original data
             mu, energy, v1, v2 = [], [], [], []
@@ -2803,7 +2851,7 @@ class Interface():
                 @ButtonSaveDataset.on_click
                 def ActionSaveDataset(selfbutton):
                     # Save single Dataset without background in Class
-                    C = self.used_datasets
+                    C = self.used_dataset
                     IN = mu[number][v1[number]:v2[number]] / \
                         np.trapz(
                             difference, x=energy[number][v1[number]:v2[number]])
@@ -2976,12 +3024,11 @@ class Interface():
         param_A,
         param_B
     ):
-        """Single spline method to remove background
-        """
+        """Single spline method to remove background"""
 
         try:
             number = self.used_dataset_position
-            df = self.used_df_type
+            df = self.used_df_name
 
             # Retrieve original data
             mu, energy, v1, v2, c = [], [], [], [], []
@@ -3078,7 +3125,7 @@ class Interface():
             @ButtonSaveDataset.on_click
             def ActionSaveDataset(selfbutton):
                 # Save single Dataset without background in Class
-                C = self.used_datasets
+                C = self.used_dataset
                 temp_df = pd.DataFrame()
                 temp_df["Energy"] = energy[number]
                 temp_df["\u03BC"] = mu[number]
@@ -3243,7 +3290,10 @@ class Interface():
         """Finds the maximum of the derivative foe each Dataset"""
 
         def derivative_list(energy, mu):
-            """Return the center point derivative for each point x_i as np.gradient(y) / np.gradient(x)"""
+            """
+            Return the center point derivative for each point x_i as
+            np.gradient(y) / np.gradient(x)
+            """
             dEnergy, dIT = [], []
 
             for i in range(len(mu)):
@@ -3257,7 +3307,7 @@ class Interface():
 
         try:
             number = self.used_dataset_position
-            df = self.used_df_type
+            df = self.used_df_name
 
             mu, energy, v1, v2 = [], [], [], []
             for j, C in enumerate(self.used_class_list):
@@ -3339,8 +3389,8 @@ class Interface():
                     (ButtonSaveE0, ButtonSaveAll, ButtonSplinesReduction)))
 
                 def ActionSaveE0(selfbutton):
-                    setattr(self.used_datasets, "E0", dE[number][s])
-                    print(f"Saved E0 for {self.used_datasets.filename};  ")
+                    setattr(self.used_dataset, "E0", dE[number][s])
+                    print(f"Saved E0 for {self.used_dataset.filename};  ")
 
                 def ActionSaveAll(selfbutton):
                     for j, C in enumerate(self.used_class_list):
@@ -3356,7 +3406,7 @@ class Interface():
 
                         self._list_reduce_splines = interactive(
                             self.reduce_splines,
-                            spec=widgets.Dropdown(
+                            used_dataset=widgets.Dropdown(
                                 options=self.used_class_list,
                                 description='Select the Dataset:',
                                 disabled=False,
@@ -3498,7 +3548,7 @@ class Interface():
 
     def reduce_splines(
         self,
-        spec,
+        used_dataset,
         order_pre,
         order_pst,
         s1,
@@ -3514,8 +3564,8 @@ class Interface():
         """
 
         try:
-            number = self.used_class_list.index(spec)
-            df = self.used_df_type
+            number = self.used_class_list.index(used_dataset)
+            df = self.used_df_name
             print(s1, s2)
 
             mu, energy, E0, v1, v2, v3, v4 = [], [], [], [], [], [], []
@@ -3680,10 +3730,10 @@ class Interface():
                 temp_df["\u03BC_variance"] = [1/d if d > 0 else 0 for d in ITB]
                 temp_df["second_normalized_\u03BC"] = ITN
                 display(temp_df)
-                setattr(spec, "reduced_df_splines", temp_df)
-                print(f"Saved Dataset {spec.filename}")
+                setattr(used_dataset, "reduced_df_splines", temp_df)
+                print(f"Saved Dataset {used_dataset.filename}")
                 temp_df.to_csv(
-                    f"{self.folders[2]}{spec.filename}_SplinesReduced.csv", index=False)
+                    f"{self.folders[2]}{used_dataset.filename}_SplinesReduced.csv", index=False)
 
                 # Need to plot again
                 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
@@ -3737,9 +3787,9 @@ class Interface():
                 plt.tight_layout()
 
                 plt.savefig(
-                    f"{self.folders[3]}splines_reduced_{spec.filename}.pdf")
+                    f"{self.folders[3]}splines_reduced_{used_dataset.filename}.pdf")
                 plt.savefig(
-                    f"{self.folders[3]}splines_reduced_{spec.filename}.png")
+                    f"{self.folders[3]}splines_reduced_{used_dataset.filename}.png")
                 plt.close()
 
         except (AttributeError, KeyError):
@@ -3753,10 +3803,12 @@ class Interface():
             print("The selected energy range, order, or parameter value is wrong.")
 
     def normalize_maxima(self, y, interval):
+        """
+        """
 
         try:
             number = self.used_dataset_position
-            df = self.used_df_type
+            df = self.used_df_name
 
             # Retrieve original data
             mu, energy, v1, v2 = [], [], [], []
@@ -3801,7 +3853,8 @@ class Interface():
             axs[1].set_xlim(energy[number][v1[number]],
                             energy[number][v2[number]])
 
-            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]:v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
+            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]
+                        :v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
 
             print("Channel 1:", v1[number], ";",
                   "energy:", energy[number][v1[number]])
@@ -3872,20 +3925,28 @@ class Interface():
             print("The selected energy range is wrong.")
 
     # Fitting
-    def define_fitting_df(self, spec, printed_df, show):
+    def define_fitting_df(self, used_dataset, df, show_bool):
+        """
+        Make sure that the DataFrame we want to use exist, and initiate the
+        fitting routine.
+
+        :param used_dataset:
+        :param df:
+        :param show_bool:
         """
 
-        """
-
-        if not show:
+        if not show_bool:
             print("Window cleared")
             clear_output(True)
 
-        elif show:
+        elif show_bool:
             try:
-                self.used_datasets = spec
-                self.used_df_type = printed_df
-                used_df = getattr(self.used_datasets, self.used_df_type)
+                self.used_dataset = used_dataset
+                self.used_df_name = df
+
+                # test here is df is accessible
+                self.used_df = getattr(
+                    self.used_dataset, self.used_df_name)
 
                 display(self.widget_list_define_model)
 
@@ -3909,25 +3970,32 @@ class Interface():
         """
         We built a model using the lmfit package, composed of a background,
         a step and a certain number of polynomials
+
+        :param x_axis:
+        :param y_axis:
+        :param interval:
+        :param peak_number:
+        :param peak_type:
+        :param background_type:
+        :param pol_degree:
+        :param step_type:
+        :param method:
+        :param w: weights used in the fitting routine
+        :param fix_model:
         """
-        # Retrieve the data
-        self.used_df_fit = getattr(self.used_datasets, self.used_df_type)
         clear_output(True)
 
         try:
+            # Get data on interval
             v1, v2 = interval
-            indices = np.where((self.used_df_fit[x_axis] > v1) & (
-                self.used_df_fit[x_axis] < v2))
+            indices = np.where(
+                (self.used_df[x_axis] > v1) &
+                (self.used_df[x_axis] < v2))
 
-            y = self.used_df_fit[y_axis].values[indices[0]]
-            x = self.used_df_fit[x_axis].values[indices[0]]
+            y = self.used_df[y_axis].values[indices[0]]
+            x = self.used_df[x_axis].values[indices[0]]
 
-            self.fit_df = pd.DataFrame({
-                x_axis: x,
-                y_axis: y
-            })
-
-            # Background
+            # Initialize model and parameters, add Background
             if background_type == PolynomialModel:
                 self.mod = background_type(degree=pol_degree, prefix='Bcgd_')
                 self.pars = self.mod.guess(y, x=x)
@@ -3946,7 +4014,7 @@ class Interface():
                 self.pars.update(Step.make_params())
                 self.mod += Step
 
-            # Create a dictionnary for the peak to be able to iterate on their names
+            # Create a dictionnary for the peak to iterate on their names
             peaks = dict()
 
             for i in range(peak_number):
@@ -3954,14 +4022,10 @@ class Interface():
                 self.pars.update(peaks[f"Peak_{i}"].make_params())
                 self.mod += peaks[f"Peak_{i}"]
 
-            self.parameter_names = [str(p) for p in self.pars]
-            self.parameter_columns_names = ["value", "min", "max"]
-
             if fix_model:
-                print(
-                    "Please start by selecting a parameter to start working on the initial guess.")
-
                 def InitPara(para, column, value):
+                    """
+                    """
                     ButtonRetrievePara = Button(
                         description="Retrieve parameters",
                         layout=Layout(width='25%', height='35px'))
@@ -3987,11 +4051,12 @@ class Interface():
                     def ActionRetrievePara(selfbutton):
                         clear_output(True)
 
+                        # Load parameters from previous fitting result
                         try:
-                            self.result = getattr(self.used_datasets, "result")
-                            self.pars = getattr(self.result, "params")
-                            print(
-                                "Previously saved parameters loaded.")
+                            self.pars = getattr(
+                                self.used_dataset,
+                                self.used_df_name[:-3] + "_fit_result").params.copy()
+                            print("Previously saved parameters loaded.")
 
                             ButtonGuess.click()
                         except:
@@ -4032,11 +4097,16 @@ class Interface():
                                     y_guess=self.init,
                                 ))
 
+                            source_guess = ColumnDataSource(
+                                data=dict(
+                                    x=x,
+                                    y_guess=self.init,
+                                ))
+
                             # Create figure
                             TOOLTIPS = [
                                 (f"{x_axis} (eV)", "$x"),
                                 (y_axis, "$y"),
-
                             ]
 
                             p = figure(
@@ -4048,12 +4118,19 @@ class Interface():
                                 y_axis_label=y_axis
                             )
 
-                            p.line("x", "y", source=source, line_alpha=0.6,
+                            p.line("x", "y", source=source, line_alpha=0.8,
                                    legend_label="Data",
-                                   line_color=self.matplotlib_colours[0])
-                            p.line("x", "y_guess", source=source,
-                                   legend_label="Initial guess",
-                                   line_color=self.matplotlib_colours[1])
+                                   line_color=self.matplotlib_colours[0],
+                                   hover_line_alpha=1.0, hover_line_width=2.0,
+                                   muted_alpha=0.1)
+                            p.line("x", "y_guess", source=source_guess,
+                                   legend_label="Initial guess", line_alpha=0.8,
+                                   line_color=self.matplotlib_colours[1],
+                                   hover_line_alpha=1.0, hover_line_width=2.0,
+                                   muted_alpha=0.1)
+
+                            # Hide plot by clicking on legend
+                            p.legend.click_policy = "mute"
 
                             # Show figure
                             show(p)
@@ -4063,93 +4140,81 @@ class Interface():
 
                     @ButtonFit.on_click
                     def ActionFit(selfbutton):
+                        """
+                        See docs:
+                           https://docs.scipy.org/doc/scipy/reference/
+                           generated/scipy.stats.chisquare.html
+                        """
                         clear_output(True)
-                        display(widgets.HBox((ButtonRetrievePara, ButtonSavePara,
-                                              ButtonGuess, ButtonFit, ButtonSaveModel
-                                              )))
+                        display(widgets.HBox((
+                            ButtonRetrievePara, ButtonSavePara,
+                            ButtonGuess, ButtonFit, ButtonSaveModel)))
 
                         # Current guess
                         self.init = self.mod.eval(self.pars, x=x)
 
-                        # Retrieve the interval
-                        try:
-                            i = int(
-                                np.where(self.used_df_fit[x_axis] == interval[0])[0])
-                        except TypeError:
-                            i = 0
-
-                        try:
-                            j = int(
-                                np.where(self.used_df_fit[x_axis] == interval[1])[0])
-                        except TypeError:
-                            j = -1
-
                         # Retrieve weights
-                        if w == "Obs":
-                            weights = 1/y.values[i:j]
-
-                        elif w == "RMS":
-                            try:
-                                weights = 1/self.used_df_fit["RMS"].values[i:j]
-                            except AttributeError:
-                                print(
-                                    "You need to define the RMS error first, the weights are put to 1 for now.")
-                                weights = None
-
-                        elif w == "user_error":
-                            try:
-                                weights = self.used_df_fit["user_error"].values[i:j]
-                            except (KeyError, AttributeError):
-                                print(
-                                    "You need to define the User error in the initialisation, the weights are put to 1 for now.")
-                                weights = None
-                        else:
-                            weights = None
-
-                        self.fit_df["weights"] = weights
+                        # Possible to explore other options here
+                        weights = 1/y.values if w == "Obs" else None
 
                         # Launch fit
                         self.out = self.mod.fit(
-                            y, self.pars, x=x, method=method, weights=weights)
-                        self.comps = self.out.eval_components(x=x)
-
-                        display(self.out)
+                            y,
+                            self.pars,
+                            x=x,
+                            method=method,
+                            weights=weights,
+                        )
+                        display(self.out.result)
 
                         # Check the stats of the fit
                         try:
                             chisq, p = chisquare(
-                                self.out.data, self.out.best_fit, ddof=(self.out.nfree))
-                            setattr(self.used_datasets, "chisq", chisq)
-                            setattr(self.used_datasets, "p", p)
-
-                            print(
-                                f"Sum of squared residuals : {np.sum(self.out.residual**2)}, lmfit chisqr : {self.out.chisqr}")
-                            print(
-                                f"Sum of squared residuals/nfree : {np.sum(self.out.residual**2)/(self.out.nfree)}, lmfit redchisqr : {self.out.redchi}")
-
-                            # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chisquare.html
-                            print(
-                                f"Scipy Chi square for Poisson distri = {chisq}, 1 - p = {1 - p}")
-                            print(
-                                f"lmfit chisqr divided iter by expected : {np.sum((self.out.residual**2)/self.out.best_fit)}")
+                                self.out.data,
+                                self.out.best_fit,
+                                ddof=(self.out.nfree)
+                            )
+                            setattr(self.used_dataset, "chisq", chisq)
+                            setattr(self.used_dataset, "p", p)
                         except ValueError:
-                            print("Could not compute chi square.")
+                            print("Could not compute chi square (scipy.chisquare)")
 
+                        # R factor
                         r_factor = 100 * \
                             (np.sum(self.out.residual**2)/np.sum(self.out.data**2))
-                        setattr(self.used_datasets, "r_factor", r_factor)
-                        print(f"R factor : {r_factor} %.\n")
+                        self.used_dataset.r_factor = r_factor
+
+                        print(
+                            "#############################################"
+                            "\nSum of squared residuals: "
+                            f"{np.sum(self.out.residual**2):.3f}"
+                            f", lmfit chisqr: {self.out.chisqr:.3f}"
+                            f"\nSum of squared residuals/nfree: "
+                            f"{np.sum(self.out.residual**2)/(self.out.nfree):.3f}"
+                            f", lmfit redchisqr: {self.out.redchi:.3f}"
+                            f"\nScipy Chi square for Poisson distri: {chisq:.3f}"
+                            f", 1 - p = {1 - p:.3f}"
+                            "\nlmfit chisqr divided iter by expected "
+                            f"{np.sum((self.out.residual**2)/self.out.best_fit):.3f}"
+                            f"R factor : {r_factor} %.\n"
+                            "#############################################"
+                        )
+
+                        # Compute the contribution of each component in the
+                        # model for plots
+                        self.components = self.out.eval_components(x=x)
 
                         # Plot
-                        fig, axes = plt.subplots(2, 2, figsize=(
-                            16, 7), gridspec_kw={'height_ratios': [5, 1]})
+                        fig, axes = plt.subplots(
+                            2, 2, figsize=(12, 7),
+                            gridspec_kw={'height_ratios': [5, 1]})
 
                         axes[0, 0].plot(x, y, label="Data")
                         axes[0, 0].plot(x, self.out.best_fit, label='Best fit')
                         axes[0, 0].set_xlabel(x_axis, fontweight='bold')
                         axes[0, 0].set_ylabel(y_axis, fontweight='bold')
                         axes[0, 0].set_title(
-                            f"Best fit - {self.used_datasets.filename}")
+                            f"Best fit - {self.used_dataset.filename}")
                         axes[0, 0].legend()
 
                         # Residuals
@@ -4168,25 +4233,32 @@ class Interface():
                         axes[0, 1].plot(x, y, label="Data")
 
                         if background_type == ConstantModel:
-                            axes[0, 1].plot(x, np.ones(
-                                len(x)) * self.comps['Bcgd_'], 'k--', label='Background')
+                            axes[0, 1].plot(
+                                x,
+                                np.ones(len(x)) * self.components['Bcgd_'],
+                                'k--',
+                                label='Background')
                         else:
                             axes[0, 1].plot(
-                                x, self.comps['Bcgd_'], 'k--', label='Background')
+                                x,
+                                self.components['Bcgd_'],
+                                'k--',
+                                label='Background')
 
                         if step_type:
                             axes[0, 1].plot(
-                                x, self.comps['Step_'], label='Step')
+                                x, self.components['Step_'], label='Step')
 
                         for i in range(peak_number):
                             axes[0, 1].plot(
-                                x, self.comps[f"P{i}_"], label=f"Peak nb {i}")
+                                x, self.components[f"P{i}_"], label=f"Peak nb {i}")
 
                         axes[0, 1].set_xlabel(x_axis, fontweight='bold')
                         axes[0, 1].set_ylabel(y_axis, fontweight='bold')
                         axes[0, 1].legend()
-                        plt.tight_layout()
 
+                        # Save figure
+                        plt.tight_layout()
                         plt.savefig(f"{self.folders[3]}fit.pdf")
                         plt.savefig(f"{self.folders[3]}fit.png")
                         print(f"Saved image as {self.folders[3]}fit.pdf")
@@ -4213,39 +4285,34 @@ class Interface():
                             Then use this method.
                             """
                             try:
-                                # Confidence interval with the standard error from the covariance matrix
+                                # Confidence interval with the standard error
+                                # from the covariance matrix
                                 print(
-                                    f"The shape of the estimated covariance matrix is : {np.shape(self.out.covar)}. It is accessible under the self.out.covar attribute.")
-                                self.ci = lmfit.conf_interval(
-                                    self.out, self.out.result)
-                                print(
-                                    "The confidence intervals determined by the standard error from the covariance matrix are :")
-                                lmfit.printfuncs.report_ci(self.ci)
+                                    "The shape of the estimated covariance "
+                                    f"matrix is : {np.shape(self.out.covar)}.\n"
+                                )
+                                print(self.out.ci_report())
 
                             except:
-                                print("""
-                                    No covariance matrix could be estimated from the fitting routine.
-                                    We determine the confidence intervals without standard error estimates, careful !
-                                    Please refer to lmfit documentation for additional informations,
-                                    we set the standard error to 10 % of the parameter values.
-                                    """)
+                                print(
+                                    "No covariance matrix could be estimated "
+                                    "from the fitting routine.\n"
+                                    "We determined the confidence intervals "
+                                    "without standard error estimates.\n"
+                                    "Please refer to lmfit documentation for "
+                                    "additional informations.\n"
+                                    "We set the standard error to 10 % of the "
+                                    "parameter values."
+                                )
 
-                                # Determine confidence intervals without standard error estimates, careful !
+                                # Determine confidence intervals without
+                                # standard error estimates, careful !
                                 for p in self.out.result.params:
                                     self.out.result.params[p].stderr = abs(
                                         self.out.result.params[p].value * 0.1)
-                                self.ci = lmfit.conf_interval(
+                                ci = lmfit.conf_interval(
                                     self.out, self.out.result)
-                                print(
-                                    "The confidence intervals determined without standard error estimates are :")
-                                lmfit.printfuncs.report_ci(self.ci)
-
-                            try:
-                                setattr(self.used_datasets,
-                                        "confidence_intervals", self.ci)
-                            except Exception as E:
-                                print("Confidence intervals could not be saved.\n")
-                                raise E
+                                lmfit.printfuncs.report_ci(ci)
 
                         @ButtonParaSpace.on_click
                         def ActionParaSpace(selfbutton):
@@ -4254,27 +4321,46 @@ class Interface():
                     @ButtonSaveModel.on_click
                     def ActionSave(selfbutton):
                         clear_output(True)
-                        display(widgets.HBox(
-                            (ButtonRetrievePara, ButtonSavePara, ButtonGuess, ButtonFit, ButtonSaveModel)))
-
-                        print("Saved the initial parameters as Interface.pars")
-                        self.pars = self.out.params
+                        display(widgets.HBox((
+                            ButtonRetrievePara, ButtonSavePara, ButtonGuess,
+                            ButtonFit, ButtonSaveModel)))
 
                         try:
-                            setattr(self.used_datasets, "init", self.init)
-                            print("Saved the initial guess as Dataset.init")
+                            # Save best parameter values as initial guess
+                            self.pars = self.out.params
 
-                            setattr(self.used_datasets,
-                                    "result", self.out.result)
-                            print(
-                                "Saved the output of the fitting routine as Dataset.result ")
-                        except:
+                            # Save fit output
+                            setattr(
+                                self.used_dataset,
+                                self.used_df_name[:-3] + "_fit_result",
+                                self.out.result)
+                            print("Saved the output of the fitting routine.")
+
+                            # Save result as dataframe
+                            fit_df = pd.DataFrame({
+                                x_axis: self.out.userkws["x"],
+                                y_axis: self.out.data,
+                                "fit": self.out.best_fit,
+                                "residuals": self.out.residual,
+                            })
+
+                            # Save weights
+
+                            # Save DF
+                            setattr(
+                                self.used_dataset,
+                                self.used_df_name[:-3] + "_fit_df",
+                                fit_df)
+
+                            # Pickle dataset
+                            self.used_dataset.pickle_dataset(
+                                self.folders[1] +
+                                self.used_dataset.filename.split(".")[
+                                    0]+".pickle"
+                            )
+
+                        except AttributeError:
                             print("Launch the fit first. \n")
-
-                        try:
-                            self.fit_df["fit"] = self.out.best_fit
-                            self.fit_df["residuals"] = self.out.residual
-                            setattr(self.used_datasets, "fit_df", self.fit_df)
                         except Exception as e:
                             raise e
 
@@ -4283,20 +4369,22 @@ class Interface():
                 self._list_parameters_fit = interactive(
                     InitPara,
                     para=widgets.Dropdown(
-                        options=self.parameter_names,
+                        options=[str(p) for p in self.pars],
                         value=None,
                         description='Select the parameter:',
                         style={'description_width': 'initial'}),
                     column=widgets.Dropdown(
-                        options=self.parameter_columns_names,
+                        options=["value", "min", "max"],
                         description='Select the column:',
                         style={'description_width': 'initial'}),
                     value=widgets.FloatText(
                         value=0,
                         step=0.01,
                         description='Value :'))
-                self.widget_list_parameters_fit = widgets.VBox([widgets.HBox(
-                    self._list_parameters_fit.children[0:3]), self._list_parameters_fit.children[-1]])
+                self.widget_list_parameters_fit = widgets.VBox([
+                    widgets.HBox(self._list_parameters_fit.children[0:3]),
+                    self._list_parameters_fit.children[-1]
+                ])
                 display(self.widget_list_parameters_fit)
 
             else:
@@ -4310,8 +4398,6 @@ class Interface():
                 print("Please select a column.")
             else:
                 print(f"Wrong Dataset and column combination !")
-        except TypeError:
-            print("This peak distribution is not yet working, sorry.")
 
     def explore_params(self, i, j, x_axis, y_axis):
         """
@@ -4331,8 +4417,8 @@ class Interface():
         """
         try:
 
-            y = self.used_df_fit[y_axis].values[i:j]
-            x = self.used_df_fit[x_axis].values[i:j]
+            y = self.used_df[y_axis].values[i:j]
+            x = self.used_df[x_axis].values[i:j]
 
             self.mi = self.out
             self.mi.params.add('__lnsigma', value=np.log(
@@ -4353,9 +4439,9 @@ class Interface():
                 truths=list(self.resi.params.valuesdict().values())
             )
             plt.savefig(
-                f"{self.folders[3]}{self.used_datasets.filename}_corner_plot.pdf")
+                f"{self.folders[3]}{self.used_dataset.filename}_corner_plot.pdf")
             plt.savefig(
-                f"{self.folders[3]}{self.used_datasets.filename}_corner_plot.png")
+                f"{self.folders[3]}{self.used_dataset.filename}_corner_plot.png")
 
             print('median of posterior probability distribution')
             print('--------------------------------------------')
@@ -4426,10 +4512,8 @@ class Interface():
         Allows one to plot one Dataset or all spectra together
         and to then save the figure
         """
-        if check_plot == "Zero":
-            print("No plotting.")
 
-        elif check_plot == "Plot" and len(spec_number) == 1:
+        if check_plot == "Plot" and len(spec_number) == 1:
             # Bokeh plot
             try:
                 # Create source
@@ -4455,12 +4539,12 @@ class Interface():
                     x_axis_location="above",
                     title=title,
                     x_range=(df[x].values[0], df[x].values[-1]),
+                    x_axis_label=x_axis + "(eV)",
+                    y_axis_label=y_axis
                 )
 
                 p.line("x", "y", source=source,
                        legend_label=spec_number[0].filename.split("/")[-1])
-                p.yaxis.axis_label = y_axis
-                p.xaxis.axis_label = x_axis + "(eV)"
 
                 # Create second figure
                 select = figure(
@@ -4489,8 +4573,21 @@ class Interface():
                     f"{spec_number[0].filename} does not have the {plot_df} dataframe associated yet.")
 
         elif check_plot == "Plot" and len(spec_number) > 1:
-            # Create source for Bokeh
-            source = defaultdict(list)
+            # Create figure
+            TOOLTIPS = [
+                (f"{x_axis} (eV)", "$x"),
+                (y_axis, "$y"),
+            ]
+
+            p = figure(
+                height=400, width=800,
+                tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
+                toolbar_location="above",
+                tooltips=TOOLTIPS,
+                title=title,
+                x_axis_label=x_axis,
+                y_axis_label=y_axis,
+            )
 
             # Count number of scans with good df
             nb_color = 0
@@ -4509,19 +4606,23 @@ class Interface():
                         legend = scan
 
                     # Create source
-                    source["x"].append(df[x])
-                    source["y"].append(df[y])
-                    source["photon_energy"].append(int(
-                        getattr(C, plot_df[:-3] + "_photon_energy")))
-                    source["pass_energy"].append(
-                        getattr(C, plot_df[:-3] + "_pass_energy"))
-                    source["iterations"].append(
-                        getattr(C, plot_df[:-3] + "_iterations"))
-                    source["color"].append(
-                        self.matplotlib_colours[nb_color % len(self.matplotlib_colours)])
-                    source["legend"].append(legend)
+                    source = ColumnDataSource(
+                        data=dict(
+                            x=df[x].values,
+                            y=df[y].values,
+                        ))
 
+                    color = self.matplotlib_colours[nb_color % len(
+                        self.matplotlib_colours)]
                     nb_color += 1
+
+                    # Add line
+                    p.line(
+                        x='x', y='y', source=source, legend_label=legend,
+                        line_width=1, line_color=color, line_alpha=0.8,
+                        hover_line_color=color, hover_line_alpha=1.0,
+                        hover_line_width=2.0, muted_alpha=0.1)
+
                 except AttributeError:
                     pass
                     print(
@@ -4530,65 +4631,16 @@ class Interface():
             if nb_color == 0:
                 raise AttributeError(
                     "None of these files have this df as attribute.")
-
-            source = ColumnDataSource(source)
-
-            # Create figure
-            TOOLTIPS = [
-                ('File', '@legend'),
-                (f"{x_axis} (eV), {y_axis}", "($x, $y)"),
-                ('Photon E. (eV)', '@photon_energy'),
-                ('Pass E., Iter.', '(@pass_energy, @iterations)'),
-            ]
-
-            p = figure(
-                height=400, width=800,
-                tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
-                toolbar_location="above",
-                tooltips=TOOLTIPS,
-                x_axis_location="above",
-                title=title,
-                x_range=(df[x].values[0], df[x].values[-1]),
-            )
-            p.yaxis.axis_label = y_axis
-            p.xaxis.axis_label = x_axis
-
-            # Create second figure
-            select = figure(
-                title="Select range here", height=150, width=800,
-                toolbar_location=None,
-            )
-
-            # Create range tool
-            range_tool = RangeTool(
-                x_range=p.x_range
-            )
-            range_tool.overlay.fill_color = "navy"
-            range_tool.overlay.fill_alpha = 0.2
-            select.add_tools(range_tool)
-            select.toolbar.active_multi = range_tool
-
-            # Add multilines on both figures
-            p.multi_line(
-                xs='x', ys='y', source=source, legend_group='legend',
-                line_width=1, line_color='color', line_alpha=0.8,
-                hover_line_color='color', hover_line_alpha=2.0,
-            )
-            p.legend.click_policy = "mute"
-
-            select.multi_line(
-                xs='x', ys='y', source=source,
-                line_width=1, line_color='color', line_alpha=0.6,
-                hover_line_color='color', hover_line_alpha=1.0,
-            )
-
-            # Show figure
-            # export_png(p, filename=self.folders[3]+"plot.png")
-
-            show(column(p, select))
+            else:
+                # Show figure
+                p.legend.click_policy = "mute"
+                show(p)
 
         elif len(spec_number) == 0:
             print("Select more datasets.")
+
+        else:
+            clear_output(True)
 
     # All handler functions
 
