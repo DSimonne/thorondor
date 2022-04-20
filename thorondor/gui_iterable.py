@@ -73,6 +73,8 @@ class DiamondDataset:
                         f["entry1"]["instrument"][self.group]["work_function"][0])
                 # setattr(self, f"{seq}_y_scale",
                 #         f["entry1"]["instrument"][self.group]["y_scale"][:])
+                setattr(self, f"{seq}_norm_y", 1)  # No normalisation for now
+                setattr(self, f"{seq}_norm_range", (0, -1))  # No normalisation
 
                 self.Concatenated_count_time.append(
                     getattr(self, f"{seq}_count_time"))
@@ -149,7 +151,7 @@ class DiamondDataset:
 
             self.df_names.append("Concatenated_df")
 
-            print("\tAppended Concatenated DataFrame.")
+            print("\tAppended Concatenated_df.")
         except UnboundLocalError:
             print("\tEmpty file.")
 

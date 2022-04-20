@@ -57,6 +57,8 @@ class Interface():
         self.filter_window = 21
         self.filter_poly_order = 3
 
+        self.legend = "conditions"
+
         self.matplotlib_colours = [
             '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
             '#e377c2', '#7f7f7f', '#bcbd22',
@@ -1093,8 +1095,8 @@ class Interface():
                 disabled=True,
                 style={'description_width': 'initial'}),
             x_axis=widgets.Text(
-                value="Energy",
-                placeholder="Energy",
+                value="Binding energy",
+                placeholder="Binding energy",
                 description='Type the name of the x axis:',
                 disabled=True,
                 continuous_update=False,
@@ -1411,15 +1413,17 @@ class Interface():
         :param df: DataFrame used
         """
 
-        # print a pretty table of dataset attributes
+        # Print a pretty table of dataset attributes
         table = [
-            ["DataFrame", "Counting time",
+            ["DataFrame",
+             "Count time (s)",
              "Iterations",
-             "Spectra shape",
-             "Energy step",
-             "Pass energy", "Photon energy",
+             "Data shape",
+             "Step (eV)",
+             "Pass E. (eV)",
+             "Photon E. (eV)",
              # "Work function"
-             ]
+             "Norm range"]
         ]
         tab = PrettyTable(table[0])
         for s in used_dataset.df_names:
@@ -1434,11 +1438,23 @@ class Interface():
                     int(np.round(getattr(used_dataset,
                         s[:-3]+"_photon_energy"), 0)),
                     # getattr(used_dataset, s[:-3]+"_work_function"),
+                    getattr(used_dataset, s[:-3]+"_norm_range"),
                 ]])
             except AttributeError:
                 pass
         print(tab)
 
+        # Print shift if existing
+        try:
+            print(
+                "\n##################################################################"
+                f"\nEnergy shift common to all datasets: {used_dataset.shift:.2f} eV"
+                "\n##################################################################"
+            )
+        except AttributeError:
+            pass
+
+        # Display df
         try:
             # display currently selected data frame
             display(getattr(used_dataset, df))
@@ -1497,22 +1513,22 @@ class Interface():
                     layout=Layout(width="50%", height='40px')))
             def zoom_on_data(interval):
                 # Get interval
-                self.shift_df = self.used_df[
+                shift_df = self.used_df[
                     (self.used_df[x] > interval[0]) & (
                         self.used_df[x] < interval[1])
                 ]
 
                 # Smooth data
                 y_smooth = savgol_filter(
-                    self.shift_df[y],
+                    shift_df[y],
                     self.filter_window,
                     self.filter_poly_order,
                 )
 
                 # Compute derivative
-                yp = np.diff(y_smooth) / np.diff(self.shift_df[x])
-                xp = (np.array(self.shift_df[x])[:-1] +
-                      np.array(self.shift_df[x])[1:]) / 2
+                yp = np.diff(y_smooth) / np.diff(shift_df[x])
+                xp = (np.array(shift_df[x])[:-1] +
+                      np.array(shift_df[x])[1:]) / 2
 
                 # Get first guess of shift value
                 shift = xp[np.where(yp == max(yp))]
@@ -1521,13 +1537,13 @@ class Interface():
                 # Create sources
                 source = ColumnDataSource(
                     data=dict(
-                        x=self.shift_df[x],
-                        y=self.shift_df[y],
+                        x=shift_df[x],
+                        y=shift_df[y],
                     ))
 
                 source_smooth = ColumnDataSource(
                     data=dict(
-                        x_smooth=self.shift_df[x],
+                        x_smooth=shift_df[x],
                         y_smooth=y_smooth,
                     ))
 
@@ -1545,12 +1561,11 @@ class Interface():
 
                 p = figure(
                     height=400, width=800,
-                    tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
+                    tools="box_zoom, xpan, pan, wheel_zoom, reset, undo, redo, crosshair, hover, save",
                     toolbar_location="above",
                     tooltips=TOOLTIPS,
-                    x_axis_label=x + "(eV)",
+                    x_axis_label=x + " (eV)",
                     y_axis_label=y,
-                    # title=title,
                 )
 
                 # Add line
@@ -1572,7 +1587,7 @@ class Interface():
                        muted_alpha=0.1)
 
                 # Hide plot by clicking on legend
-                p.legend.click_policy = "mute"
+                p.legend.click_policy = "hide"
 
                 # Show figure
                 show(p)
@@ -1595,7 +1610,10 @@ class Interface():
                         clear_output(True)
 
                         # Save shift
-                        self.used_dataset.shift = shift_widget
+                        try:
+                            self.used_dataset.shift += shift_widget
+                        except AttributeError:
+                            self.used_dataset.shift = shift_widget
 
                         # Apply on all the dataframes
                         for df_name in self.used_dataset.df_names:
@@ -1901,7 +1919,7 @@ class Interface():
                                        for f in ref_spectra]
 
                         # Add shifts and scale factors to references
-                        shifts = [c.value for c in self.shift_widgets]
+                        shifts = [c.value for c in shift_widgets]
                         factors = [
                             c.value for c in self.intensity_factor_widgets]
 
@@ -2068,7 +2086,7 @@ class Interface():
                         raise e
 
                 # shift the references
-                self.shift_widgets = [widgets.FloatText(
+                shift_widgets = [widgets.FloatText(
                     value=0,
                     step=self.interpol_step,
                     continuous_update=False,
@@ -2076,7 +2094,7 @@ class Interface():
                     readout_format='.2f',
                     description=f"Shift for {n}",
                     style={'description_width': 'initial'}) for n in self.ref_names]
-                _list_shift_widgets = widgets.HBox(tuple(self.shift_widgets))
+                _list_shift_widgets = widgets.HBox(tuple(shift_widgets))
 
                 # Multiply the reference intensity
                 self.intensity_factor_widgets = [widgets.FloatText(
@@ -2107,7 +2125,7 @@ class Interface():
                 _list_energy_widgets = widgets.HBox(tuple(self.energy_widgets))
 
                 align_ref_and_spec_dict = {
-                    c.description: c for c in self.energy_widgets + self.shift_widgets + self.intensity_factor_widgets}
+                    c.description: c for c in self.energy_widgets + shift_widgets + self.intensity_factor_widgets}
 
                 _list_in = widgets.VBox(
                     [_list_energy_widgets, _list_shift_widgets, _list_intensity_factor_widgets])
@@ -2153,7 +2171,7 @@ class Interface():
                     (self.used_df[x] > interval[0]) & (
                         self.used_df[x] < interval[1])
                 ]
-                self.norm_y = self.norm_df.intensity.mean()
+                norm_y = self.norm_df.intensity.mean()
 
                 # Create sources
                 source = ColumnDataSource(
@@ -2197,7 +2215,7 @@ class Interface():
                        hover_line_alpha=1.0, hover_line_width=2.0)
 
                 # Hide plot by clicking on legend
-                p.legend.click_policy = "hide"
+                p.legend.click_policy = "mute"
 
                 # Show figure
                 show(p)
@@ -2214,8 +2232,15 @@ class Interface():
                         clear_output(True)
 
                         # Save normalization
-                        self.used_dataset.norm = self.norm_y
-                        self.used_df.intensity = self.used_df.intensity / self.norm_y
+                        setattr(
+                            self.used_dataset,
+                            self.used_df_name[:-3]+"_norm_y",
+                            norm_y),
+                        setattr(
+                            self.used_dataset,
+                            self.used_df_name[:-3]+"_norm_range",
+                            interval),
+                        self.used_df.intensity = self.used_df.intensity / norm_y
 
                         # Save as csv
                         self.save_df_to_csv(
@@ -3853,8 +3878,13 @@ class Interface():
             axs[1].set_xlim(energy[number][v1[number]],
                             energy[number][v2[number]])
 
-            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]
-                        :v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
+            axs[1].plot(
+                energy[number][v1[number]:v2[number]],
+                mu[number][v1[number]:v2[number]] /
+                max(mu[number][v1[number]:v2[number]]),
+                '-',
+                color='C0'
+            )
 
             print("Channel 1:", v1[number], ";",
                   "energy:", energy[number][v1[number]])
@@ -4129,6 +4159,49 @@ class Interface():
                                    hover_line_alpha=1.0, hover_line_width=2.0,
                                    muted_alpha=0.1)
 
+                            # Evaluate components
+                            self.components = self.mod.eval_components(x=x)
+
+                            if background_type == ConstantModel:
+                                p.line(
+                                    x=x,
+                                    y=np.ones(len(x)) *
+                                    self.components['Bcgd_'],
+                                    line_alpha=0.5,
+                                    line_color=self.matplotlib_colours[3],
+                                    hover_line_alpha=1.0, hover_line_width=1.5,
+                                    muted_alpha=0.1,
+                                    legend_label='Background')
+                            else:
+                                p.line(
+                                    x=x,
+                                    y=self.components['Bcgd_'],
+                                    line_alpha=0.5,
+                                    line_color=self.matplotlib_colours[3],
+                                    hover_line_alpha=1.0, hover_line_width=1.5,
+                                    muted_alpha=0.1,
+                                    legend_label='Background')
+
+                            if step_type:
+                                p.line(
+                                    x=x,
+                                    y=self.components['Step_'],
+                                    line_alpha=0.5,
+                                    line_color=self.matplotlib_colours[3],
+                                    hover_line_alpha=1.0, hover_line_width=1.5,
+                                    muted_alpha=0.1,
+                                    legend_label='Step')
+
+                            for i in range(peak_number):
+                                p.line(
+                                    x=x,
+                                    y=self.components[f"P{i}_"],
+                                    line_alpha=0.5,
+                                    line_color=self.matplotlib_colours[3+i],
+                                    hover_line_alpha=1.0, hover_line_width=1.5,
+                                    muted_alpha=0.1,
+                                    legend_label=f"Peak nb {i}")
+
                             # Hide plot by clicking on legend
                             p.legend.click_policy = "mute"
 
@@ -4166,39 +4239,6 @@ class Interface():
                             weights=weights,
                         )
                         display(self.out.result)
-
-                        # Check the stats of the fit
-                        try:
-                            chisq, p = chisquare(
-                                self.out.data,
-                                self.out.best_fit,
-                                ddof=(self.out.nfree)
-                            )
-                            setattr(self.used_dataset, "chisq", chisq)
-                            setattr(self.used_dataset, "p", p)
-                        except ValueError:
-                            print("Could not compute chi square (scipy.chisquare)")
-
-                        # R factor
-                        r_factor = 100 * \
-                            (np.sum(self.out.residual**2)/np.sum(self.out.data**2))
-                        self.used_dataset.r_factor = r_factor
-
-                        print(
-                            "#############################################"
-                            "\nSum of squared residuals: "
-                            f"{np.sum(self.out.residual**2):.3f}"
-                            f", lmfit chisqr: {self.out.chisqr:.3f}"
-                            f"\nSum of squared residuals/nfree: "
-                            f"{np.sum(self.out.residual**2)/(self.out.nfree):.3f}"
-                            f", lmfit redchisqr: {self.out.redchi:.3f}"
-                            f"\nScipy Chi square for Poisson distri: {chisq:.3f}"
-                            f", 1 - p = {1 - p:.3f}"
-                            "\nlmfit chisqr divided iter by expected "
-                            f"{np.sum((self.out.residual**2)/self.out.best_fit):.3f}"
-                            f"R factor : {r_factor} %.\n"
-                            "#############################################"
-                        )
 
                         # Compute the contribution of each component in the
                         # model for plots
@@ -4262,6 +4302,44 @@ class Interface():
                         plt.savefig(f"{self.folders[3]}fit.pdf")
                         plt.savefig(f"{self.folders[3]}fit.png")
                         print(f"Saved image as {self.folders[3]}fit.pdf")
+
+                        # Check the stats of the fit
+                        try:
+                            chisq, p = chisquare(
+                                self.out.data,
+                                self.out.best_fit,
+                                ddof=(self.out.nfree)
+                            )
+                            setattr(self.used_dataset, "chisq", chisq)
+                            setattr(self.used_dataset, "p", p)
+
+                            print(
+                                "#############################################"
+                                "\nSum of squared residuals: "
+                                f"{np.sum(self.out.residual**2):.3f}"
+                                f", lmfit chisqr: {self.out.chisqr:.3f}"
+                                f"\nSum of squared residuals/nfree: "
+                                f"{np.sum(self.out.residual**2)/(self.out.nfree):.3f}"
+                                f", lmfit redchisqr: {self.out.redchi:.3f}"
+                                f"\nScipy Chi square for Poisson distri: {chisq:.3f}"
+                                f", 1 - p = {1 - p:.3f}"
+                                "\nlmfit chisqr divided iter by expected "
+                                f"{np.sum((self.out.residual**2)/self.out.best_fit):.3f}\n"
+                                "#############################################"
+                            )
+                        except ValueError:
+                            print("Could not compute chi square (scipy.chisquare)")
+
+                        # R factor
+                        r_factor = 100 * \
+                            (np.sum(self.out.residual**2)/np.sum(self.out.data**2))
+                        self.used_dataset.r_factor = r_factor
+
+                        print(
+                            "\n#############################################\n"
+                            f"R factor : {r_factor} %.\n"
+                            "#############################################"
+                        )
 
                         ButtonCI = Button(
                             description="Determine confidence Intervals",
@@ -4582,12 +4660,13 @@ class Interface():
             p = figure(
                 height=400, width=800,
                 tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
-                toolbar_location="above",
                 tooltips=TOOLTIPS,
                 title=title,
                 x_axis_label=x_axis,
                 y_axis_label=y_axis,
             )
+            p.toolbar.active_scroll = "wheel_zoom"
+            p.toolbar.active_inspect = ["hover", "crosshair"]
 
             # Count number of scans with good df
             nb_color = 0
@@ -4601,9 +4680,17 @@ class Interface():
                     try:
                         scan = int(C.filename[6:11])
                         row = self.scan_table[self.scan_table.Scan == scan]
-                        legend = f"{scan}, {row.Condition.values[0]}, {row.Edge.values[0]}"
+
+                        if self.legend == "condition":
+                            legend = f"{scan}, {row.Condition.values[0]}"
+                        elif self.legend == "edge":
+                            legend = f"{scan}, {row.Edge.values[0]}"
+                        elif self.legend == "scan":
+                            legend = scan
+                        else:
+                            legend = f"{scan}, {row.Condition.values[0]}, {row.Edge.values[0]}"
                     except:
-                        legend = scan
+                        legend = C.filename
 
                     # Create source
                     source = ColumnDataSource(
