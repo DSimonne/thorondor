@@ -27,10 +27,11 @@ from datetime import datetime
 from thorondor.gui_iterable import DiamondDataset
 
 from bokeh.layouts import column
-from bokeh.models import ColumnDataSource, RangeTool, HoverTool
+from bokeh.models import ColumnDataSource, Legend, RangeTool, HoverTool, WheelZoomTool, CrosshairTool
 from bokeh.plotting import figure, show
 from bokeh.io import output_notebook, export_png
 from collections import defaultdict
+
 output_notebook()
 
 
@@ -50,20 +51,24 @@ class Interface():
         whether or not a class_list is given in entry.
         """
 
+        # Temporaty for energy values
         self.new_energy_column = np.round(np.linspace(-100, 1000, 2001), 2)
         self.interpol_step = 0.05
 
-        # Filtering base parameter
+        # Filtering function parameters
         self.filter_window = 21
         self.filter_poly_order = 3
 
+        # Plot parameters that do not change a lot
         self.legend = "conditions"
-
+        self.figure_height = 400
+        self.figure_width = 900
         self.matplotlib_colours = [
             '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
             '#e377c2', '#7f7f7f', '#bcbd22',
             '#17becf']
 
+        # Initialise list
         self.class_list = []
 
         # Subdirectories
@@ -1560,12 +1565,13 @@ class Interface():
                 ]
 
                 p = figure(
-                    height=400, width=800,
-                    tools="box_zoom, xpan, pan, wheel_zoom, reset, undo, redo, crosshair, hover, save",
-                    toolbar_location="above",
+                    height=self.figure_height, width=self.figure_width,
+                    tools="box_zoom, pan, wheel_zoom, reset, undo, redo, crosshair, hover, save",
                     tooltips=TOOLTIPS,
                     x_axis_label=x + " (eV)",
                     y_axis_label=y,
+                    active_scroll="wheel_zoom",
+                    active_drag="pan",
                 )
 
                 # Add line
@@ -1632,6 +1638,121 @@ class Interface():
                             self.folders[1] +
                             self.used_dataset.filename.split(".")[0]+".pickle"
                         )
+
+        except (AttributeError, KeyError):
+            print(f"Wrong Dataset and column combination !")
+
+    def norm_data(self, used_dataset, df, x, y):
+        """Allows one to normalize the Dataset"""
+
+        try:
+            self.used_dataset = used_dataset
+            self.used_df_name = df
+            self.used_df = getattr(used_dataset, df)  # not a copy !
+            v1, v2 = min(self.used_df[x].values), max(self.used_df[x].values)
+
+            @interact(
+                interval=widgets.FloatRangeSlider(
+                    value=[v1, v2],
+                    min=v1,
+                    max=v2,
+                    step=0.5,
+                    description='Range:',
+                    disabled=False,
+                    continuous_update=False,
+                    orientation="horizontal",
+                    readout=True,
+                    readout_format='.1f',
+                    style={'description_width': 'initial'},
+                    layout=Layout(width="50%", height='40px')))
+            def zoom_on_data(interval):
+                # Get interval
+                self.norm_df = self.used_df[
+                    (self.used_df[x] > interval[0]) & (
+                        self.used_df[x] < interval[1])
+                ]
+                norm_y = self.norm_df.intensity.mean()
+
+                # Create sources
+                source = ColumnDataSource(
+                    data=dict(
+                        x=self.used_df[x],
+                        y=self.used_df[y],
+                    ))
+
+                source_interval = ColumnDataSource(
+                    data=dict(
+                        x=self.norm_df[x],
+                        y=self.norm_df[y],
+                    ))
+
+                # Create figure
+                TOOLTIPS = [
+                    (f"{x} (eV), {y}", "($x, $y)"),
+                    ("index", "$index"),
+                ]
+
+                p = figure(
+                    height=self.figure_height, width=self.figure_width,
+                    tools="pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
+                    tooltips=TOOLTIPS,
+                    active_scroll="wheel_zoom",
+                    x_axis_location="above",
+                    active_drag="pan",
+                    x_axis_label=x + "(eV)",
+                    y_axis_label=y,
+                )
+
+                # Add line
+                p.line("x", "y", source=source,
+                       legend_label="Data",
+                       color=self.matplotlib_colours[0], line_alpha=0.8,
+                       hover_line_alpha=1.0, hover_line_width=2.0)
+
+                p.line("x", "y", source=source_interval,
+                       legend_label="Selected data range",
+                       color=self.matplotlib_colours[1], line_alpha=0.8,
+                       hover_line_alpha=1.0, hover_line_width=2.0)
+
+                # Hide plot by clicking on legend
+                p.legend.click_policy = "mute"
+
+                # Show figure
+                show(p)
+
+                @interact(
+                    norm_data_button=widgets.Checkbox(
+                        value=False,
+                        description="Normalize data.",
+                        indent=False,
+                        icon="check"))
+                def norm_data(norm_data_button):
+                    "Normalize data"
+                    if norm_data_button:
+                        clear_output(True)
+
+                        # Save normalization
+                        setattr(
+                            self.used_dataset,
+                            self.used_df_name[:-3]+"_norm_y",
+                            norm_y),
+                        setattr(
+                            self.used_dataset,
+                            self.used_df_name[:-3]+"_norm_range",
+                            interval),
+                        self.used_df.intensity = self.used_df.intensity / norm_y
+
+                        # Save as csv
+                        self.save_df_to_csv(
+                            self.used_dataset, self.used_df_name)
+
+                        # Pickle dataset
+                        self.used_dataset.pickle_dataset(
+                            self.folders[1] +
+                            self.used_dataset.filename.split(".")[0]+".pickle"
+                        )
+
+                        print("Normalized DataFrame, and saved as csv.")
 
         except (AttributeError, KeyError):
             print(f"Wrong Dataset and column combination !")
@@ -2141,121 +2262,6 @@ class Interface():
         else:
             clear_output(True)
             print("Select at least two references, one Dataset that will serve to visualise the interpolation, and the list of datasets you would like to process.")
-
-    def norm_data(self, used_dataset, df, x, y):
-        """Allows one to normalize the Dataset"""
-
-        try:
-            self.used_dataset = used_dataset
-            self.used_df_name = df
-            self.used_df = getattr(used_dataset, df)  # not a copy !
-            v1, v2 = min(self.used_df[x].values), max(self.used_df[x].values)
-
-            @interact(
-                interval=widgets.FloatRangeSlider(
-                    value=[v1, v2],
-                    min=v1,
-                    max=v2,
-                    step=0.5,
-                    description='Range:',
-                    disabled=False,
-                    continuous_update=False,
-                    orientation="horizontal",
-                    readout=True,
-                    readout_format='.1f',
-                    style={'description_width': 'initial'},
-                    layout=Layout(width="50%", height='40px')))
-            def zoom_on_data(interval):
-                # Get interval
-                self.norm_df = self.used_df[
-                    (self.used_df[x] > interval[0]) & (
-                        self.used_df[x] < interval[1])
-                ]
-                norm_y = self.norm_df.intensity.mean()
-
-                # Create sources
-                source = ColumnDataSource(
-                    data=dict(
-                        x=self.used_df[x],
-                        y=self.used_df[y],
-                    ))
-
-                source_interval = ColumnDataSource(
-                    data=dict(
-                        x=self.norm_df[x],
-                        y=self.norm_df[y],
-                    ))
-
-                # Create figure
-                TOOLTIPS = [
-                    (f"{x} (eV), {y}", "($x, $y)"),
-                    ("index", "$index"),
-                ]
-
-                p = figure(
-                    height=400, width=800,
-                    tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
-                    toolbar_location="above",
-                    tooltips=TOOLTIPS,
-                    x_axis_location="above",
-                    x_axis_label=x + "(eV)",
-                    y_axis_label=y,
-                    # title=title,
-                )
-
-                # Add line
-                p.line("x", "y", source=source,
-                       legend_label="Data",
-                       color=self.matplotlib_colours[0], line_alpha=0.8,
-                       hover_line_alpha=1.0, hover_line_width=2.0)
-
-                p.line("x", "y", source=source_interval,
-                       legend_label="Selected data range",
-                       color=self.matplotlib_colours[1], line_alpha=0.8,
-                       hover_line_alpha=1.0, hover_line_width=2.0)
-
-                # Hide plot by clicking on legend
-                p.legend.click_policy = "mute"
-
-                # Show figure
-                show(p)
-
-                @interact(
-                    norm_data_button=widgets.Checkbox(
-                        value=False,
-                        description="Normalize data.",
-                        indent=False,
-                        icon="check"))
-                def norm_data(norm_data_button):
-                    "Normalize data"
-                    if norm_data_button:
-                        clear_output(True)
-
-                        # Save normalization
-                        setattr(
-                            self.used_dataset,
-                            self.used_df_name[:-3]+"_norm_y",
-                            norm_y),
-                        setattr(
-                            self.used_dataset,
-                            self.used_df_name[:-3]+"_norm_range",
-                            interval),
-                        self.used_df.intensity = self.used_df.intensity / norm_y
-
-                        # Save as csv
-                        self.save_df_to_csv(
-                            self.used_dataset, self.used_df_name)
-
-                        # Pickle dataset
-                        self.used_dataset.pickle_dataset(
-                            self.folders[1] +
-                            self.used_dataset.filename.split(".")[0]+".pickle"
-                        )
-
-                        print("Normalized DataFrame, and saved as csv.")
-
-        except (AttributeError, KeyError):
-            print(f"Wrong Dataset and column combination !")
 
     # Reduction interactive function
     def reduce_data(
@@ -4140,10 +4146,10 @@ class Interface():
                             ]
 
                             p = figure(
-                                height=600, width=800,
+                                height=600, width=self.figure_width,
                                 tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
-                                toolbar_location="above",
                                 tooltips=TOOLTIPS,
+                                active_scroll="wheel_zoom",
                                 x_axis_label=x_axis + "(eV)",
                                 y_axis_label=y_axis
                             )
@@ -4610,15 +4616,15 @@ class Interface():
                 ]
 
                 p = figure(
-                    height=400, width=800,
+                    height=self.figure_height, width=self.figure_width,
                     tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
-                    toolbar_location="above",
                     tooltips=TOOLTIPS,
                     x_axis_location="above",
                     title=title,
                     x_range=(df[x].values[0], df[x].values[-1]),
                     x_axis_label=x_axis + "(eV)",
-                    y_axis_label=y_axis
+                    y_axis_label=y_axis,
+                    active_scroll="wheel_zoom",
                 )
 
                 p.line("x", "y", source=source,
@@ -4626,7 +4632,8 @@ class Interface():
 
                 # Create second figure
                 select = figure(
-                    title="Select range here", height=150, width=800,
+                    height=150, width=self.figure_width,
+                    title="Select range here",
                     toolbar_location=None,
                     x_range=(df[x].values[0], df[x].values[-1]),
                 )
@@ -4658,15 +4665,16 @@ class Interface():
             ]
 
             p = figure(
-                height=400, width=800,
+                height=self.figure_height, width=self.figure_width,
                 tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
                 tooltips=TOOLTIPS,
                 title=title,
                 x_axis_label=x_axis,
                 y_axis_label=y_axis,
+                active_scroll="wheel_zoom"
             )
-            p.toolbar.active_scroll = "wheel_zoom"
-            p.toolbar.active_inspect = ["hover", "crosshair"]
+
+            p.add_layout(Legend(), 'right')
 
             # Count number of scans with good df
             nb_color = 0
@@ -4713,11 +4721,11 @@ class Interface():
                 except AttributeError:
                     pass
                     print(
-                        f"The {plot_df} dataframe does not have such attributes.")
+                        f"The {C.filename} class does not have this DataFrame.")
 
             if nb_color == 0:
                 raise AttributeError(
-                    "None of these files have this df as attribute.")
+                    "None of these classes have this DataFrame.")
             else:
                 # Show figure
                 p.legend.click_policy = "mute"
