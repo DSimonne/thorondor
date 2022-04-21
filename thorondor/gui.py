@@ -1541,7 +1541,7 @@ class Interface():
                     ("Exponential-Gaussian", ExponentialGaussianModel),
                     ("Skewed-Gaussian", SkewedGaussianModel),
                     ("Skewed-Voigt", SkewedVoigtModel),
-                    ("Donaich", DonaichModel)
+                    ("Donaich", DoniachModel)
                 ],
                 value=LorentzianModel,
                 description='Peak distribution:',
