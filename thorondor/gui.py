@@ -60,9 +60,6 @@ class Interface():
         self.filter_poly_order = 3
 
         # Plot parameters that do not change a lot
-        self.legend = "conditions"
-        self.figure_height = 400
-        self.figure_width = 900
         self.matplotlib_colours = [
             '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
             '#e377c2', '#7f7f7f', '#bcbd22',
@@ -375,7 +372,7 @@ class Interface():
                 disabled=False,
                 style={'description_width': 'initial'},
                 layout=Layout(display="flex", flex_flow='column', width="50%")),
-            spec_number=widgets.SelectMultiple(
+            used_datasets=widgets.SelectMultiple(
                 options=self.class_list,
                 value=self.class_list[2:5],
                 rows=5,
@@ -1053,7 +1050,7 @@ class Interface():
         # Widgets for the plotting
         self._list_plot_dataset = interactive(
             self.plot_dataset,
-            spec_number=widgets.SelectMultiple(
+            used_datasets=widgets.SelectMultiple(
                 options=self.class_list,
                 value=self.class_list[0:1],
                 rows=5,
@@ -1120,6 +1117,41 @@ class Interface():
                 disabled=True,
                 continuous_update=False,
                 style={'description_width': 'initial'}),
+            legend_position=widgets.Dropdown(
+                options=[
+                    ("Left", "left"),
+                    ("Right", "right"),
+                    ("Center", "center"),
+                    ("Above", "above"),
+                    ("Below", "below")],
+                value="center",
+                description='Legend position',
+                disabled=True,
+                style={'description_width': 'initial'}),
+            legend_column=widgets.Dropdown(
+                options=["Scan", "Condition", "Edge"],
+                value="Condition",
+                description='Legend column',
+                disabled=True,
+                style={'description_width': 'initial'}),
+            figure_width=widgets.IntText(
+                value=1100,
+                description='Width:',
+                disabled=True,
+                layout=Layout(width='15%'),
+            ),
+            figure_height=widgets.IntText(
+                value=600,
+                description='Height:',
+                disabled=True,
+                layout=Layout(width='15%'),
+            ),
+            intensity_shift=widgets.FloatText(
+                value=0,
+                description='Intensity shift:',
+                disabled=True,
+                layout=Layout(width='15%'),
+                step=0.01),
             check_plot=widgets.ToggleButtons(
                 options=[('Clear', "Zero"), ('Plot', "Plot")],
                 value="Zero",
@@ -1131,13 +1163,15 @@ class Interface():
                     'We plot one Dataset',
                     'We plot all the spectra'
                 ],
-                style={'description_width': 'initial'}))
+                style={'description_width': 'initial'}),
+        )
         self.tab_plot = widgets.VBox([
             self._list_plot_dataset.children[0],
             widgets.HBox(self._list_plot_dataset.children[1:4]),
             widgets.HBox(self._list_plot_dataset.children[4:7]),
+            widgets.HBox(self._list_plot_dataset.children[7:12]),
             self._list_plot_dataset.children[-2],
-            self._list_plot_dataset.children[-1]
+            self._list_plot_dataset.children[-1],
         ])
 
         # Create the final window
@@ -1565,7 +1599,7 @@ class Interface():
                 ]
 
                 p = figure(
-                    height=self.figure_height, width=self.figure_width,
+                    height=500, width=1000,
                     tools="box_zoom, pan, wheel_zoom, reset, undo, redo, crosshair, hover, save",
                     tooltips=TOOLTIPS,
                     x_axis_label=x + " (eV)",
@@ -1693,7 +1727,7 @@ class Interface():
                 ]
 
                 p = figure(
-                    height=self.figure_height, width=self.figure_width,
+                    height=500, width=1000,
                     tools="pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
                     tooltips=TOOLTIPS,
                     active_scroll="wheel_zoom",
@@ -1993,7 +2027,7 @@ class Interface():
     def LCF(
         self,
         ref_spectra,
-        spec_number,
+        used_datasets,
         used_dataset,
         df_type,
         x,
@@ -2010,7 +2044,7 @@ class Interface():
                     try:
                         # interval for data
                         v1Data, v2Data = [], []
-                        for j, C in enumerate(spec_number):
+                        for j, C in enumerate(used_datasets):
                             used_df = getattr(C, df_type)
                             try:
                                 v1Data.append(
@@ -2030,9 +2064,9 @@ class Interface():
 
                         # Take data spectrum on interval
                         self.spec_df = [getattr(D, df_type).copy(
-                        )[v1:v2] for D, v1, v2 in zip(spec_number, v1Data, v2Data)]
+                        )[v1:v2] for D, v1, v2 in zip(used_datasets, v1Data, v2Data)]
 
-                        self.used_df = self.spec_df[spec_number.index(
+                        self.used_df = self.spec_df[used_datasets.index(
                             used_dataset)]
 
                         # Import the references
@@ -2100,7 +2134,7 @@ class Interface():
                             @ButtonLauchLCF.on_click
                             def ActionLauchLCF(selfbutton):
 
-                                for used_df, C in zip(self.spec_df, spec_number):
+                                for used_df, C in zip(self.spec_df, used_datasets):
 
                                     # Create function that returns the square of the difference between LCf of references and data, for each Dataset that was selected
                                     def ref_model(pars):
@@ -2181,17 +2215,17 @@ class Interface():
                                 # Final plot of the reference weights
                                 fig, ax = plt.subplots(figsize=(10, 6))
 
-                                xplot = np.arange(0, len(spec_number), 1)
+                                xplot = np.arange(0, len(used_datasets), 1)
                                 for j, n in enumerate(self.ref_names):
                                     ax.plot(xplot, [
-                                            C.ref_weights[j] for C in spec_number], marker='x', label=f"{n} component")
+                                            C.ref_weights[j] for C in used_datasets], marker='x', label=f"{n} component")
                                 ax.legend()
                                 ax.set_ylabel('Weight')
                                 ax.set_title(
                                     'Comparison of weight importance thoughout data series')
                                 ax.set_xticks(xplot)
                                 ax.set_xticklabels(
-                                    [C.filename for C in spec_number], rotation=90, fontsize=14)
+                                    [C.filename for C in used_datasets], rotation=90, fontsize=14)
 
                         else:
                             print(
@@ -4583,81 +4617,40 @@ class Interface():
 
     def plot_dataset(
         self,
-        spec_number,
+        used_datasets,
         plot_df,
         x,
         y,
         x_axis,
         y_axis,
         title,
-        check_plot
+        legend_position,
+        legend_column,
+        figure_width,
+        figure_height,
+        intensity_shift,
+        check_plot,
     ):
         """
         Allows one to plot one Dataset or all spectra together
         and to then save the figure
+
+        :param used_datasets:
+        :param plot_df:
+        :param x:
+        :param y:
+        :param x_axis:
+        :param y_axis:
+        :param title:
+        :param legend_position:
+        :param legend_column:
+        :param figure_width:
+        :param figure_height:
+        :param intensity_shift:
+        :param check_plot:
         """
 
-        if check_plot == "Plot" and len(spec_number) == 1:
-            # Bokeh plot
-            try:
-                # Create source
-                df = getattr(spec_number[0], plot_df)
-
-                source = ColumnDataSource(
-                    data=dict(
-                        x=df[x],
-                        y=df[y]
-                    ))
-
-                # Create figure
-                TOOLTIPS = [
-                    (f"{x_axis} (eV), {y_axis}", "($x, $y)"),
-                    ("index", "$index"),
-                ]
-
-                p = figure(
-                    height=self.figure_height, width=self.figure_width,
-                    tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
-                    tooltips=TOOLTIPS,
-                    x_axis_location="above",
-                    title=title,
-                    x_range=(df[x].values[0], df[x].values[-1]),
-                    x_axis_label=x_axis + "(eV)",
-                    y_axis_label=y_axis,
-                    active_scroll="wheel_zoom",
-                )
-
-                p.line("x", "y", source=source,
-                       legend_label=spec_number[0].filename.split("/")[-1])
-
-                # Create second figure
-                select = figure(
-                    height=150, width=self.figure_width,
-                    title="Select range here",
-                    toolbar_location=None,
-                    x_range=(df[x].values[0], df[x].values[-1]),
-                )
-
-                # Create range tool
-                range_tool = RangeTool(x_range=p.x_range)
-                range_tool.overlay.fill_color = "navy"
-                range_tool.overlay.fill_alpha = 0.2
-                select.add_tools(range_tool)
-                select.toolbar.active_multi = range_tool
-                select.yaxis.axis_label = y_axis
-                select.xaxis.axis_label = x_axis + "(eV)"
-
-                # Add line
-                select.line("x", "y", source=source)
-
-                # Show figure
-                show(column(p, select))
-
-            except AttributeError:
-                print(
-                    f"{spec_number[0].filename} does not have the {plot_df} dataframe associated yet.")
-
-        elif check_plot == "Plot" and len(spec_number) > 1:
+        if check_plot == "Plot" and len(used_datasets) > 0:
             # Create figure
             TOOLTIPS = [
                 (f"{x_axis} (eV)", "$x"),
@@ -4665,7 +4658,7 @@ class Interface():
             ]
 
             p = figure(
-                height=self.figure_height, width=self.figure_width,
+                height=figure_height, width=figure_width,
                 tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
                 tooltips=TOOLTIPS,
                 title=title,
@@ -4673,14 +4666,13 @@ class Interface():
                 y_axis_label=y_axis,
                 active_scroll="wheel_zoom"
             )
-
-            p.add_layout(Legend(), 'right')
+            p.add_layout(Legend(), legend_position)
 
             # Count number of scans with good df
             nb_color = 0
 
             # Iterate on class list
-            for j, C in enumerate(spec_number):
+            for j, C in enumerate(used_datasets):
                 try:
                     df = getattr(C, plot_df)
 
@@ -4689,11 +4681,11 @@ class Interface():
                         scan = int(C.filename[6:11])
                         row = self.scan_table[self.scan_table.Scan == scan]
 
-                        if self.legend == "condition":
+                        if legend_column == "Condition":
                             legend = f"{scan}, {row.Condition.values[0]}"
-                        elif self.legend == "edge":
+                        elif legend_column == "Edge":
                             legend = f"{scan}, {row.Edge.values[0]}"
-                        elif self.legend == "scan":
+                        elif legend_column == "Scan":
                             legend = scan
                         else:
                             legend = f"{scan}, {row.Condition.values[0]}, {row.Edge.values[0]}"
@@ -4701,10 +4693,11 @@ class Interface():
                         legend = C.filename
 
                     # Create source
+                    # Add shift here if needed
                     source = ColumnDataSource(
                         data=dict(
                             x=df[x].values,
-                            y=df[y].values,
+                            y=df[y].values + j*intensity_shift,
                         ))
 
                     color = self.matplotlib_colours[nb_color % len(
@@ -4729,9 +4722,12 @@ class Interface():
             else:
                 # Show figure
                 p.legend.click_policy = "mute"
+
+                if x == "binding_energy":
+                    p.x_range.flipped = True
                 show(p)
 
-        elif len(spec_number) == 0:
+        elif len(used_datasets) == 0:
             print("Select more datasets.")
 
         else:
