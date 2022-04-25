@@ -11,6 +11,13 @@ import ipywidgets as widgets
 from ipywidgets import interact, Button, Layout, interactive, fixed
 from IPython.display import display, Markdown, Latex, clear_output
 
+from bokeh.layouts import column
+from bokeh.models import ColumnDataSource, Legend, RangeTool, HoverTool, WheelZoomTool, CrosshairTool, LabelSet, LegendItem
+from bokeh.plotting import figure, show
+from bokeh.io import output_notebook, export_png
+from bokeh.palettes import gray, inferno, viridis, magma, cividis
+output_notebook()
+
 
 class DiamondDataset:
     """
@@ -161,6 +168,119 @@ class DiamondDataset:
 
     def __str__(self):
         return repr(self)
+
+    def plot_iterations(
+        self,
+        used_df,
+        intensity_shift=0,
+        norm_range=[0, 1000],
+        title="Iterations",
+        cmap="viridis",
+        cmap_shift=0,
+        x="binding_energy",
+        label_start=None,
+        label_end=None,
+    ):
+        """
+        Plot each iteration in spectra attribute
+        :param used_df: options are listed in self.df_names
+        :param cmap: options are gray, inferno, viridis, magma, cividis
+        :param cmap_shift: used to avoid yellow
+        """
+
+        # Get data
+        if used_df in self.df_names:
+            data = getattr(self, used_df[:-3]+"_spectra")
+            x = getattr(self, used_df[:-3]+"_" + x)
+            nb_iterations = data.shape[1]
+        else:
+            raise AttributeError(
+                f"Please pick a DataFrame name from {self.df_names}")
+
+        # Get color map
+        cmap_dict = {
+            "gray": gray,
+            "inferno": inferno,
+            "viridis": viridis,
+            "magma": magma,
+            "cividis": cividis
+        }
+        try:
+            colors = cmap_dict[cmap](nb_iterations+cmap_shift)
+        except Exception as e:
+            raise e
+
+        # Sort normalisation range
+        norm_range = [np.min(norm_range), np.max(norm_range)]
+
+        # Create figure
+        TOOLTIPS = [
+            (f"Binding energy (eV)", "$x"),
+            ("Intensity", "$y"),
+        ]
+
+        p = figure(
+            tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
+            active_scroll="wheel_zoom",
+            x_axis_label="Binding energy",
+            title=title,
+            width=1100,
+            height=600,
+        )
+
+        p.xaxis.axis_label_text_font_size = "15pt"
+        p.xaxis.major_label_text_font_size = "15pt"
+        p.yaxis.axis_label_text_font_size = "15pt"
+        p.yaxis.major_label_text_font_size = "15pt"
+        p.title.text_font_size = '20pt'
+
+        p.add_layout(Legend(label_text_font_size="15pt"), "center")
+
+        for j in range(nb_iterations):
+            # Normalize data
+            y = data[:, j, :][0]
+            y_norm = y / np.mean(data[:, j, (x < norm_range[1])
+                                 & (x > norm_range[0])][0])
+
+            # Add shift here if needed
+            source = ColumnDataSource(
+                data=dict(
+                    x=x,
+                    y=y_norm+j*intensity_shift,
+                ))
+
+            # Assign color
+            color = colors[j]
+
+            if j == 0 and label_start != None:
+                p.line(
+                    x='x', y='y', source=source,
+                    line_width=1.2,
+                    line_color=color,
+                    hover_line_alpha=1.0,
+                    hover_line_width=2.0,
+                    legend_label=label_start,
+                )
+
+            elif j == nb_iterations-1 and label_end != None:
+                p.line(
+                    x='x', y='y', source=source,
+                    line_width=1.2,
+                    line_color=color,
+                    hover_line_alpha=1.0,
+                    hover_line_width=2.0,
+                    legend_label=label_end,
+                )
+            else:
+                p.line(
+                    x='x', y='y', source=source,
+                    line_width=1.2,
+                    line_color=color,
+                    hover_line_alpha=1.0,
+                    hover_line_width=2.0,
+                )
+
+        show(p)
 
     def pickle_dataset(self, path):
         """Use the pickle module to save the classes"""

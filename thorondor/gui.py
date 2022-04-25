@@ -4676,14 +4676,14 @@ class Interface():
             nb_color = 0
 
             # Iterate on class list
-            for j, C in enumerate(used_datasets):
+            for C in used_datasets:
                 try:
                     df = getattr(C, plot_df)
 
                     # Get attr for legend
                     try:
                         scan = int(C.filename[6:11])
-                        row = self.scan_table[self.scan_table.Scan == scan]
+                        row = self.logbook[self.logbook.Scan == scan]
 
                         if legend_column == "Condition":
                             legend = f"{scan}, {row.Condition.values[0]}"
@@ -4693,6 +4693,8 @@ class Interface():
                             legend = scan
                         else:
                             legend = f"{scan}, {row.Condition.values[0]}, {row.Edge.values[0]}"
+                    except AttributeError:
+                        print("No logbook attribute.")
                     except:
                         legend = C.filename
 
@@ -4701,7 +4703,7 @@ class Interface():
                     source = ColumnDataSource(
                         data=dict(
                             x=df[x].values,
-                            y=df[y].values + j*intensity_shift,
+                            y=df[y].values + nb_color*intensity_shift,
                         ))
 
                     color = self.matplotlib_colours[nb_color % len(
