@@ -14,13 +14,14 @@ from IPython.display import display, Markdown, Latex, clear_output
 
 class DiamondDataset:
     """
-    Class that loads the data from the NeXuS file saved after XPS
-    measurements at B07 at Diamond.
+    Designed for data analysis of XPS measurements at B07 at Diamond.
     """
 
     def __init__(self, filename):
         """
         DataFrame intensity is spectrum / iterations
+
+        :param filename: path to NeXuS file
         """
         self.filename = filename.split("/")[-1]
         self.df_names = []

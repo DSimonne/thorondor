@@ -30,7 +30,6 @@ from bokeh.layouts import column
 from bokeh.models import ColumnDataSource, Legend, RangeTool, HoverTool, WheelZoomTool, CrosshairTool
 from bokeh.plotting import figure, show
 from bokeh.io import output_notebook, export_png
-from collections import defaultdict
 
 output_notebook()
 
@@ -44,11 +43,9 @@ class Interface():
     be used with a jupyter notebook.
     """
 
-    def __init__(self, class_list=False):
+    def __init__(self):
         """
         All the widgets for the GUI are defined here.
-        Two different initialization procedures are possible depending on
-        whether or not a class_list is given in entry.
         """
 
         # Temporaty for energy values
@@ -130,6 +127,19 @@ class Interface():
                 description='Select the dataframe:',
                 disabled=True,
                 style={'description_width': 'initial'}))
+
+        self.tab_logbook = interactive(
+            self.print_logbook,
+            path=widgets.Dropdown(
+                options=sorted(
+                    glob.glob("**/*.csv", recursive=True),
+                    reverse=True
+                ),
+                description='Select a file:',
+                style={'description_width': 'initial'},
+            )
+            # refresh_list
+        )
 
         # Widgets for the tools
         self.tab_tools = interactive(
@@ -830,8 +840,11 @@ class Interface():
                 readout_format='.2f',
                 style={'description_width': 'initial'},
                 layout=Layout(width="50%", height='40px')))
-        self.widget_list_reduce_splines_derivative = widgets.VBox(
-            [self._list_reduce_splines_derivative.children[0], self._list_reduce_splines_derivative.children[1], self._list_reduce_splines_derivative.children[-1]])
+        self.widget_list_reduce_splines_derivative = widgets.VBox([
+            self._list_reduce_splines_derivative.children[0],
+            self._list_reduce_splines_derivative.children[1],
+            self._list_reduce_splines_derivative.children[-1]
+        ])
 
         # Widgets for the LSF background reduction and normalization method
         self._list_normalize_maxima = interactive(
@@ -1037,10 +1050,12 @@ class Interface():
                 disabled=False,
                 style={'description_width': 'initial'}))
         self.widget_list_define_model = widgets.VBox([
-            widgets.HBox(self._list_define_model.children[0:2]), self._list_define_model.children[2], widgets.HBox(
-                self._list_define_model.children[3:5]),
-            widgets.HBox(self._list_define_model.children[5:8]), widgets.HBox(
-                self._list_define_model.children[8:11]), self._list_define_model.children[-1]
+            widgets.HBox(self._list_define_model.children[0:2]),
+            self._list_define_model.children[2],
+            widgets.HBox(self._list_define_model.children[3:5]),
+            widgets.HBox(self._list_define_model.children[5:8]),
+            widgets.HBox(self._list_define_model.children[8:11]),
+            self._list_define_model.children[-1]
         ])
         self._list_define_model.children[10].observe(
             self.model_handler, names="value")
@@ -1129,7 +1144,7 @@ class Interface():
                 disabled=True,
                 style={'description_width': 'initial'}),
             legend_column=widgets.Dropdown(
-                options=["Scan", "Condition", "Edge"],
+                options=["Scan", "Condition", "Edge", "Comment"],
                 value="Condition",
                 description='Legend column',
                 disabled=True,
@@ -1161,7 +1176,6 @@ class Interface():
                 tooltips=[
                     'Nothing is plotted',
                     'We plot one Dataset',
-                    'We plot all the spectra'
                 ],
                 style={'description_width': 'initial'}),
         )
@@ -1169,7 +1183,8 @@ class Interface():
             self._list_plot_dataset.children[0],
             widgets.HBox(self._list_plot_dataset.children[1:4]),
             widgets.HBox(self._list_plot_dataset.children[4:7]),
-            widgets.HBox(self._list_plot_dataset.children[7:12]),
+            widgets.HBox(self._list_plot_dataset.children[7:11]),
+            self._list_plot_dataset.children[11],
             self._list_plot_dataset.children[-2],
             self._list_plot_dataset.children[-1],
         ])
@@ -1178,6 +1193,7 @@ class Interface():
         self.window = widgets.Tab(children=[
             self.tab_init,
             self.tab_data,
+            self.tab_logbook,
             self.tab_tools,
             self.tab_reduce_method,
             self.tab_fit,
@@ -1185,39 +1201,13 @@ class Interface():
         ])
         self.window.set_title(0, 'Initialize')
         self.window.set_title(1, 'View Data')
-        self.window.set_title(2, 'Tools')
-        self.window.set_title(3, 'Reduce Background')
-        self.window.set_title(4, 'Fit')
-        self.window.set_title(5, 'Plot')
+        self.window.set_title(2, 'View logbook')
+        self.window.set_title(3, 'Tools')
+        self.window.set_title(4, 'Reduce Background')
+        self.window.set_title(5, 'Fit')
+        self.window.set_title(6, 'Plot')
 
-        # Display window
-        if class_list:
-            self._list_widgets_init.children[0].value = self.data_folder
-            self._list_widgets_init.children[0].disabled = True
-            self._list_widgets_init.children[1].value = "default"
-
-            for w in self.tab_data.children[:-1]:
-                w.disabled = False
-
-            for w in self.tab_tools.children[:-1]:
-                w.disabled = False
-
-            for w in self._list_tab_reduce_method.children[:-1]:
-                w.disabled = False
-
-            for w in self._list_define_fitting_df.children[:-1]:
-                w.disabled = False
-
-            for w in self._list_plot_dataset.children[:-1]:
-                w.disabled = False
-
-            # Show the plotting first
-            self.window.selected_index = 5
-
-            display(self.window)
-
-        elif not class_list:
-            display(self.window)
+        display(self.window)
 
     # Initialization interactive function, if no previous work had been done
     def class_list_init(
@@ -1500,6 +1490,15 @@ class Interface():
 
         except AttributeError:
             print(f"Wrong Dataset and column combination !")
+
+    def print_logbook(self, path):
+        try:
+            self.logbook = pd.read_csv(path)
+            with pd.option_context('display.max_rows', None,):
+                display(self.logbook)
+
+        except FileNotFoundError:
+            print("File does not exist.")
 
     # Tools global interactive function
 
@@ -4666,7 +4665,12 @@ class Interface():
                 y_axis_label=y_axis,
                 active_scroll="wheel_zoom"
             )
-            p.add_layout(Legend(), legend_position)
+            p.add_layout(
+                Legend(
+                    click_policy="mute",
+                    label_text_font_size="15pt",
+                ),
+                legend_position)
 
             # Count number of scans with good df
             nb_color = 0
@@ -4707,7 +4711,7 @@ class Interface():
                     # Add line
                     p.line(
                         x='x', y='y', source=source, legend_label=legend,
-                        line_width=1, line_color=color, line_alpha=0.8,
+                        line_width=1.5, line_color=color, line_alpha=1,
                         hover_line_color=color, hover_line_alpha=1.0,
                         hover_line_width=2.0, muted_alpha=0.1)
 
@@ -4721,10 +4725,14 @@ class Interface():
                     "None of these classes have this DataFrame.")
             else:
                 # Show figure
-                p.legend.click_policy = "mute"
-
                 if x == "binding_energy":
                     p.x_range.flipped = True
+
+                p.xaxis.axis_label_text_font_size = "15pt"
+                p.xaxis.major_label_text_font_size = "15pt"
+                p.yaxis.axis_label_text_font_size = "15pt"
+                p.yaxis.major_label_text_font_size = "15pt"
+                p.title.text_font_size = '20pt'
                 show(p)
 
         elif len(used_datasets) == 0:
