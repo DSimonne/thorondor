@@ -4067,20 +4067,16 @@ class Interface():
             # Initialize model and parameters, add Background
             if background_type == PolynomialModel:
                 self.mod = background_type(degree=pol_degree, prefix='Bcgd_')
-                self.pars = self.mod.guess(y, x=x)
 
             elif background_type == "victoreen":
                 self.mod = lmfit.Model(self.victoreen, prefix='Bcgd_')
-                self.pars = self.mod.make_params(Bcgd_A=1, Bcgd_B=1)
 
             else:
                 self.mod = background_type(prefix='Bcgd_')
-                self.pars = self.mod.guess(y, x=x)
 
             # Add a step if needed
             if step_type:
                 Step = StepModel(form=step_type, prefix="Step_")
-                self.pars.update(Step.make_params())
                 self.mod += Step
 
             # Create a dictionnary for the peak to iterate on their names
@@ -4088,8 +4084,10 @@ class Interface():
 
             for i in range(peak_number):
                 peaks[f"Peak_{i}"] = peak_type(prefix=f"P{i}_")
-                self.pars.update(peaks[f"Peak_{i}"].make_params())
                 self.mod += peaks[f"Peak_{i}"]
+
+            # Create parameters
+            self.pars = self.mod.make_params()
 
             if fix_model:
                 def InitPara(para, column, value):
@@ -4114,6 +4112,7 @@ class Interface():
                         ButtonRetrievePara, ButtonSavePara, ButtonGuess,
                         ButtonFit, ButtonSaveModel
                     )))
+
                     display(self.pars)
 
                     @ButtonRetrievePara.on_click
@@ -4179,7 +4178,7 @@ class Interface():
                             ]
 
                             p = figure(
-                                height=600, width=self.figure_width,
+                                height=600, width=1100,
                                 tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
                                 tooltips=TOOLTIPS,
                                 active_scroll="wheel_zoom",
@@ -4199,7 +4198,10 @@ class Interface():
                                    muted_alpha=0.1)
 
                             # Evaluate components
-                            self.components = self.mod.eval_components(x=x)
+                            self.components = self.mod.eval_components(
+                                x=x,
+                                params=self.pars
+                            )
 
                             if background_type == ConstantModel:
                                 p.line(
@@ -4241,8 +4243,16 @@ class Interface():
                                     muted_alpha=0.1,
                                     legend_label=f"Peak nb {i}")
 
-                            # Hide plot by clicking on legend
+                            # Plot parameters
                             p.legend.click_policy = "mute"
+                            if x_axis == "binding_energy":
+                                p.x_range.flipped = True
+
+                            p.xaxis.axis_label_text_font_size = "15pt"
+                            p.xaxis.major_label_text_font_size = "15pt"
+                            p.yaxis.axis_label_text_font_size = "15pt"
+                            p.yaxis.major_label_text_font_size = "15pt"
+                            p.title.text_font_size = '20pt'
 
                             # Show figure
                             show(p)
@@ -4509,12 +4519,15 @@ class Interface():
                 print("Cleared")
                 clear_output(True)
 
-        except (AttributeError, KeyError):
-            plt.close()
-            if y_axis == "value":
-                print("Please select a column.")
-            else:
-                print(f"Wrong Dataset and column combination !")
+        except Exception as E:
+            raise E
+
+        # except (AttributeError, KeyError):
+        #     plt.close()
+        #     if y_axis == "value":
+        #         print("Please select a column.")
+        #     else:
+        #         print(f"Wrong Dataset and column combination !")
 
     def explore_params(self, i, j, x_axis, y_axis):
         """
