@@ -4245,9 +4245,6 @@ class Interface():
 
                             # Plot parameters
                             p.legend.click_policy = "mute"
-                            if x_axis == "binding_energy":
-                                p.x_range.flipped = True
-
                             p.xaxis.axis_label_text_font_size = "15pt"
                             p.xaxis.major_label_text_font_size = "15pt"
                             p.yaxis.axis_label_text_font_size = "15pt"
