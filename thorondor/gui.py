@@ -149,9 +149,6 @@ class Interface:
                     ("Shift correction", "shift"),
                     ("Normalize", "norm"),
                     ("Deglitching", "deglitching"),
-                    ("Determine errors", "errors"),
-                    ("Linear Combination Fit", "LCF"),
-                    # ("Save as .nxs (NeXuS)", "nexus"),
                 ],
                 value="shift",
                 description='Tools:',
@@ -288,161 +285,6 @@ class Interface:
             widgets.HBox(self._list_deglitching.children[1:3]),
             widgets.HBox(self._list_deglitching.children[3:6]),
             self._list_deglitching.children[-1]])
-
-        self._list_errors_extraction = interactive(
-            self.errors_extraction,
-            used_dataset=widgets.Dropdown(
-                options=self.class_list,
-                description='Dataset:',
-                disabled=False,
-                style={'description_width': 'initial'},
-                layout=Layout(width='60%')),
-            df=widgets.Dropdown(
-                options=[
-                    ("Renamed data", "df"),
-                    ("Shifted data", "shifted_df"),
-                    ("Reduced data", "reduced_df"),
-                    ("Reduced by Splines", "reduced_df_splines"),
-                    ("Fitted data", "fit_df")
-                ],
-                value="df",
-                description='Dataframe:',
-                disabled=False,
-                style={'description_width': 'initial'},
-                layout=Layout(width="60%")),
-            x_axis=widgets.Dropdown(
-                options=[
-                    ("Binding energy", "binding_energy"),
-                    ("Kinetic energy", "kinetic_energy")
-                ],
-                value="binding_energy",
-                description='Pick an x-axis',
-                disabled=False,
-                style={'description_width': 'initial'}),
-            y_axis=widgets.Dropdown(
-                options=[
-                    ("Select a value", "value"),
-                    ("Intensity", "intensity"),
-                    ("Reference shift", "reference_shift"),
-                    ("First normalized \u03BC", "first_normalized_\u03BC"),
-                    ("Background corrected", "background_corrected"),
-                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
-                    ("Fit", "fit"),
-                    ("Weights", "weights"),
-                ],
-                value="intensity",
-                description='Pick an y-axis',
-                disabled=False,
-                style={'description_width': 'initial'}),
-            nbpts=widgets.Dropdown(
-                options=[i for i in range(5, 20)],
-                value=13,
-                description='Nb of points per interval:',
-                disabled=False,
-                style={'description_width': 'initial'}),
-            deg=widgets.IntSlider(
-                value=2,
-                min=0,
-                max=3,
-                step=1,
-                description='Degree:',
-                disabled=False,
-                orientation="horizontal",
-                continuous_update=False,
-                readout=True,
-                readout_format="d",
-                style={'description_width': 'initial'}),
-            direction=widgets.Dropdown(
-                options=[("Left", "left"), ("Right", "right")],
-                value="left",
-                description='Direction if odd:',
-                disabled=False,
-                style={'description_width': 'initial'}),
-            compute=widgets.Checkbox(
-                value=False,
-                description='Compute errors',
-                disabled=False,
-                style={'description_width': 'initial'}))
-        self._list_errors_extraction.children[7].observe(
-            self.error_extraction_handler, names="value")
-        self.widget_list_errors_extraction = widgets.VBox([
-            self._list_errors_extraction.children[0],
-            widgets.HBox(self._list_errors_extraction.children[1:3]),
-            widgets.HBox(self._list_errors_extraction.children[3:7]),
-            self._list_errors_extraction.children[-2],
-            self._list_errors_extraction.children[-1]
-        ])
-
-        self._list_LCF = interactive(
-            self.LCF,
-            ref_spectra=widgets.SelectMultiple(
-                options=self.class_list,
-                value=self.class_list[0:2],
-                description='Select at least two references for LCF:',
-                disabled=False,
-                style={'description_width': 'initial'},
-                layout=Layout(display="flex", flex_flow='column', width="50%")),
-            used_datasets=widgets.SelectMultiple(
-                options=self.class_list,
-                value=self.class_list[2:5],
-                rows=5,
-                description='Spectra to analyze:',
-                disabled=False,
-                style={'description_width': 'initial'},
-                layout=Layout(display="flex", flex_flow='column', width="50%")),
-            used_dataset=widgets.Dropdown(
-                options=self.class_list,
-                description='Dataset to plot between the Datasets to analyze:',
-                disabled=False,
-                style={'description_width': 'initial'},
-                layout=Layout(width='60%')),
-            df_type=widgets.Dropdown(
-                options=[
-                    ("Renamed data", "df"),
-                    ("Shifted data", "shifted_df"),
-                    ("Reduced data", "reduced_df"),
-                    ("Reduced by Splines", "reduced_df_splines"),
-                    ("Fitted data", "fit_df")
-                ],
-                value="reduced_df",
-                description='Pick the dataframe:',
-                disabled=False,
-                style={'description_width': 'initial'}),
-            x=widgets.Dropdown(
-                options=[
-                    ("Binding energy", "binding_energy"),
-                    ("Kinetic energy", "kinetic_energy")
-                ],
-                value="binding_energy",
-                description='Pick an x-axis',
-                disabled=False,
-                style={'description_width': 'initial'}),
-            y=widgets.Dropdown(
-                options=[
-                    ("Select a value", "value"),
-                    ("Intensity", "intensity"),
-                    ("Reference shift", "reference_shift"),
-                    ("First normalized \u03BC", "first_normalized_\u03BC"),
-                    ("Background corrected", "background_corrected"),
-                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
-                    ("Fit", "fit"),
-                ],
-                value="second_normalized_\u03BC",
-                description='Pick an y-axis',
-                disabled=False,
-                style={'description_width': 'initial'}),
-            LCF_bool=widgets.Checkbox(
-                value=False,
-                description='Perform LCF',
-                disabled=False,
-                style={'description_width': 'initial'}))
-        self.widget_list_LCF = widgets.VBox([
-            widgets.HBox(self._list_LCF.children[:2]),
-            widgets.HBox(self._list_LCF.children[2:4]),
-            widgets.HBox(self._list_LCF.children[4:6]),
-            self._list_LCF.children[-2],
-            self._list_LCF.children[-1]
-        ])
 
         self._list_norm_data = interactive(
             self.norm_data,
@@ -1195,7 +1037,7 @@ class Interface:
             self.tab_data,
             self.tab_logbook,
             self.tab_tools,
-            self.tab_reduce_method,
+            # self.tab_reduce_method,
             self.tab_fit,
             self.tab_plot,
         ])
@@ -1203,9 +1045,9 @@ class Interface:
         self.window.set_title(1, 'View Data')
         self.window.set_title(2, 'View logbook')
         self.window.set_title(3, 'Tools')
-        self.window.set_title(4, 'Reduce Background')
-        self.window.set_title(5, 'Fit')
-        self.window.set_title(6, 'Plot')
+        # self.window.set_title(4, 'Reduce Background')
+        self.window.set_title(4, 'Fit')
+        self.window.set_title(5, 'Plot')
 
         display(self.window)
 
@@ -1261,10 +1103,6 @@ class Interface:
             self._list_shift.children[0].options = self.class_list
             self._list_norm_data.children[0].options = self.class_list
             self._list_deglitching.children[0].options = self.class_list
-            self._list_errors_extraction.children[0].options = self.class_list
-            self._list_LCF.children[0].options = self.class_list
-            self._list_LCF.children[1].options = self.class_list
-            self._list_LCF.children[2].options = self.class_list
 
             self._list_tab_reduce_method.children[1].options = self.class_list
             self._list_tab_reduce_method.children[2].options = self.class_list
@@ -1277,8 +1115,6 @@ class Interface:
             self._list_shift.children[1].options = self.df_names
             self._list_norm_data.children[1].options = self.df_names
             self._list_deglitching.children[1].options = self.df_names
-            self._list_errors_extraction.children[1].options = self.df_names
-            self._list_LCF.children[3].options = self.df_names
             self._list_tab_reduce_method.children[3].options = self.df_names
             self._list_define_fitting_df.children[1].options = self.df_names
             self._list_plot_dataset.children[1].options = self.df_names
@@ -1349,10 +1185,6 @@ class Interface:
             self._list_shift.children[0].options = self.class_list
             self._list_norm_data.children[0].options = self.class_list
             self._list_deglitching.children[0].options = self.class_list
-            self._list_errors_extraction.children[0].options = self.class_list
-            self._list_LCF.children[0].options = self.class_list
-            self._list_LCF.children[1].options = self.class_list
-            self._list_LCF.children[2].options = self.class_list
 
             self._list_tab_reduce_method.children[1].options = self.class_list
             self._list_tab_reduce_method.children[2].options = self.class_list
@@ -1365,8 +1197,6 @@ class Interface:
             self._list_shift.children[1].options = self.df_names
             self._list_norm_data.children[1].options = self.df_names
             self._list_deglitching.children[1].options = self.df_names
-            self._list_errors_extraction.children[1].options = self.df_names
-            self._list_LCF.children[3].options = self.df_names
             self._list_tab_reduce_method.children[3].options = self.df_names
             self._list_define_fitting_df.children[1].options = self.df_names
             self._list_plot_dataset.children[1].options = self.df_names
@@ -1409,10 +1239,6 @@ class Interface:
             self._list_shift.children[0].options = self.class_list
             self._list_norm_data.children[0].options = self.class_list
             self._list_deglitching.children[0].options = self.class_list
-            self._list_errors_extraction.children[0].options = self.class_list
-            self._list_LCF.children[0].options = self.class_list
-            self._list_LCF.children[1].options = self.class_list
-            self._list_LCF.children[2].options = self.class_list
 
             self._list_tab_reduce_method.children[1].options = self.class_list
             self._list_tab_reduce_method.children[2].options = self.class_list
@@ -1425,15 +1251,14 @@ class Interface:
             self._list_shift.children[1].options = self.df_names
             self._list_norm_data.children[1].options = self.df_names
             self._list_deglitching.children[1].options = self.df_names
-            self._list_errors_extraction.children[1].options = self.df_names
-            self._list_LCF.children[3].options = self.df_names
             self._list_tab_reduce_method.children[3].options = self.df_names
             self._list_define_fitting_df.children[1].options = self.df_names
             self._list_plot_dataset.children[1].options = self.df_names
 
     # Visualization interactive function
 
-    def print_data(self, used_dataset, df):
+    @staticmethod
+    def print_data(used_dataset, df):
         """
         Print the main attributes of each DataFrame in the object and displays
         the DataFrame selected.
@@ -1443,20 +1268,23 @@ class Interface:
         """
 
         # Print a pretty table of dataset attributes
-        table = [
-            ["DataFrame",
-             "Count time (s)",
-             "Iterations",
-             "Data shape",
-             "Step (eV)",
-             "Pass E. (eV)",
-             "Photon E. (eV)",
-             # "Work function"
-             "Norm range"]
-        ]
-        tab = PrettyTable(table[0])
-        for s in used_dataset.df_names:
+        n = used_dataset.df_names.copy()
+        n.remove("Concatenated_df")
+
+        for s in n:
             try:
+                table = [[
+                    "DataFrame",
+                    "Count time (s)",
+                    "Iterations",
+                    "Data shape",
+                    "Step (eV)",
+                    "Pass E. (eV)",
+                    "Photon E. (eV)",
+                    "Norm range"
+                ]]
+                tab = PrettyTable(table[0])
+
                 tab.add_rows([[
                     s,
                     getattr(used_dataset, s[:-3]+"_count_time"),
@@ -1469,9 +1297,32 @@ class Interface:
                     # getattr(used_dataset, s[:-3]+"_work_function"),
                     getattr(used_dataset, s[:-3]+"_norm_range"),
                 ]])
-            except AttributeError:
-                pass
-        print(tab)
+            except Exception as E:
+
+                table = [[
+                    "DataFrame",
+                    "Count time (s)",
+                    "Iterations",
+                    "Data shape",
+                    "Step (eV)",
+                    "Pass E. (eV)",
+                    "Photon E. (eV)",
+                ]]
+                tab = PrettyTable(table[0])
+
+                tab.add_rows([[
+                    s,
+                    getattr(used_dataset, s[:-3]+"_count_time"),
+                    int(getattr(used_dataset, s[:-3]+"_iterations")),
+                    getattr(used_dataset, s[:-3]+"_spectra").shape,
+                    getattr(used_dataset, s[:-3]+"_step_energy"),
+                    int(getattr(used_dataset, s[:-3]+"_pass_energy")),
+                    int(np.round(getattr(used_dataset,
+                        s[:-3]+"_photon_energy"), 0)),
+                    # getattr(used_dataset, s[:-3]+"_work_function"),
+                ]])
+
+            print(tab)
 
         # Print shift if existing
         try:
@@ -1508,10 +1359,6 @@ class Interface:
             display(self.widget_list_shift)
         if method == "deglitching" and plot_bool:
             display(self.widget_list_deglitching)
-        if method == "errors" and plot_bool:
-            display(self.widget_list_errors_extraction)
-        if method == "LCF" and plot_bool:
-            display(self.widget_list_LCF)
         if method == "norm" and plot_bool:
             display(self.widget_list_norm_data)
         if not plot_bool:
@@ -1906,395 +1753,6 @@ class Interface:
                 print("Please select a column.")
             else:
                 print(f"Wrong Dataset and column combination !")
-
-    def errors_extraction(
-        self,
-        used_dataset,
-        df,
-        x_axis,
-        y_axis,
-        nbpts,
-        deg,
-        direction,
-        compute
-    ):
-        """
-        """
-
-        def poly(x, y, deg):
-            coef = np.polyfit(x, y, deg)
-            # Create the polynomial function from the coefficients
-            return np.poly1d(coef)(x)
-
-        if compute:
-            try:
-                clear_output(True)
-                self.used_dataset, self.used_df_name = used_dataset, df
-                used_df = getattr(self.used_dataset, self.used_df_name)
-                x = used_df[x_axis]
-                y = used_df[y_axis]
-
-                if nbpts % 2 == 0:
-                    n = int(nbpts / 2)
-                    self.intl = [k - n if k - n >
-                                 0 else 0 for k in range(len(x))]
-                    self.intr = [k + n if k + n <
-                                 len(x) else len(x) for k in range(len(x))]
-
-                    # Cut the Intervals
-                    self.xcut = {f"Int {n}": x.values[i: j] for i, j, n in zip(
-                        self.intl, self.intr, range(len(x)))}
-                    self.ycut = {f"Int {n}": y.values[i: j] for i, j, n in zip(
-                        self.intl, self.intr, range(len(x)))}
-
-                elif nbpts % 2 == 1 and direction == "left":
-                    n = int(nbpts / 2)
-                    self.intl = [k - n - 1 if k - n - 1 >
-                                 0 else 0 for k in range(len(x))]
-                    self.intr = [k + n if k + n <
-                                 len(x) else len(x) for k in range(len(x))]
-
-                    # Cut the Intervals
-                    self.xcut = {f"Int {n}": x.values[i: j] for i, j, n in zip(
-                        self.intl, self.intr, range(len(x)))}
-                    self.ycut = {f"Int {n}": y.values[i: j] for i, j, n in zip(
-                        self.intl, self.intr, range(len(x)))}
-
-                elif nbpts % 2 == 1 and direction == "right":
-                    n = int(nbpts / 2)
-                    self.intl = [k - n if k - n >
-                                 0 else 0 for k in range(len(x))]
-                    self.intr = [k + n + 1 if k + n <
-                                 len(x) else len(x) for k in range(len(x))]
-
-                    # Cut the Intervals
-                    self.xcut = {f"Int {n}": x.values[i: j] for i, j, n in zip(
-                        self.ntl, self.intr, range(len(x)))}
-                    self.ycut = {f"Int {n}": y.values[i: j] for i, j, n in zip(
-                        self.intl, self.intr, range(len(x)))}
-
-                # Create a dictionnary with all the polynoms
-                self.polynoms = {f"Poly {i}": poly(
-                    self.xcut[f"Int {i}"], self.ycut[f"Int {i}"], deg) for i in range(len(x))}
-
-                self.errors = pd.DataFrame({
-                    "Deviations": [self.polynoms[f"Poly {i}"] - self.ycut[f"Int {i}"] for i in range(len(x))],
-                    "RMS": [(np.sum((self.polynoms[f"Poly {i}"] - self.ycut[f"Int {i}"]) ** 2)/len(self.ycut[f"Int {i}"])) ** (1 / 2) for i in range(len(x))]
-                })
-
-                print("RMS and deviation well determined.")
-
-                plt.close()
-
-                fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
-                axs[0].set_xlabel("Energy")
-                axs[0].set_ylabel('Intensity')
-                axs[0].set_title('Data')
-                axs[0].plot(x, y, label="Data")
-                axs[0].legend()
-
-                axs[1].set_xlabel("Energy")
-                axs[1].set_ylabel('Intensity')
-                axs[1].set_title('Root Mean Square')
-                axs[1].plot(x, self.errors["RMS"], label="RMS")
-                axs[1].legend()
-
-                try:
-                    used_df["Deviations"] = self.errors["Deviations"]
-                    used_df["RMS"] = self.errors["RMS"]
-                except:
-                    setattr(self.used_dataset, self.used_df_name, pd.concat(
-                        [used_df, self.errors], axis=1, sort=False))
-
-                display(getattr(self.used_dataset, self.used_df_name))
-
-            except (AttributeError, KeyError):
-                plt.close()
-                if y_axis == "value":
-                    print("Please select a column.")
-                else:
-                    print(f"Wrong Dataset and column combination !")
-
-            except Exception as e:
-                raise e
-
-        else:
-            plt.close()
-            print("Window cleared.")
-            clear_output(True)
-
-    def LCF(
-        self,
-        ref_spectra,
-        used_datasets,
-        used_dataset,
-        df_type,
-        x,
-        y,
-        LCF_bool
-    ):
-        """
-        """
-        if LCF_bool and len(ref_spectra) > 1:
-            self.ref_names = [f.filename for f in ref_spectra]
-
-            try:
-                def align_ref_and_spec(**kwargs):
-                    try:
-                        # interval for data
-                        v1Data, v2Data = [], []
-                        for j, C in enumerate(used_datasets):
-                            used_df = getattr(C, df_type)
-                            try:
-                                v1Data.append(
-                                    int(np.where(
-                                        used_df["Energy"].values ==
-                                        self.energy_widgets[0].value[0])[0]))
-                            except TypeError:
-                                v1Data.append(0)
-
-                            try:
-                                v2Data.append(
-                                    int(np.where(
-                                        used_df["Energy"].values ==
-                                        self.energy_widgets[0].value[1])[0]))
-                            except TypeError:
-                                v2Data.append(len(used_df["Energy"].values)-1)
-
-                        # Take data spectrum on interval
-                        self.spec_df = [getattr(D, df_type).copy(
-                        )[v1:v2] for D, v1, v2 in zip(used_datasets, v1Data, v2Data)]
-
-                        self.used_df = self.spec_df[used_datasets.index(
-                            used_dataset)]
-
-                        # Import the references
-                        self.ref_df = [getattr(f, df_type).copy()
-                                       for f in ref_spectra]
-
-                        # Add shifts and scale factors to references
-                        shifts = [c.value for c in shift_widgets]
-                        factors = [
-                            c.value for c in self.intensity_factor_widgets]
-
-                        for df, s, a in zip(self.ref_df, shifts, factors):
-                            df[x] = np.round(df[x].values + s, 2)
-                            df[y] = df[y]*a
-
-                        # interval for references after corrections
-                        v1Ref, v2Ref = [], []
-                        for used_df in self.ref_df:
-                            try:
-                                v1Ref.append(
-                                    int(np.where(
-                                        used_df["Energy"].values ==
-                                        self.energy_widgets[0].value[0])[0]))
-                            except TypeError:
-                                v1Ref.append(0)
-
-                            try:
-                                v2Ref.append(
-                                    int(np.where(
-                                        used_df["Energy"].values ==
-                                        self.energy_widgets[0].value[1])[0]))
-                            except TypeError:
-                                v2Ref.append(len(used_df["Energy"].values)-1)
-
-                        # Take ref on interval
-                        self.ref_df = [df[v1:v2] for df, v1,
-                                       v2 in zip(self.ref_df, v1Ref, v2Ref)]
-
-                        # Plotting
-                        fig, ax = plt.subplots(figsize=(16, 6))
-                        for used_df, n in zip(self.ref_df, self.ref_names):
-                            ax.plot(used_df[x], used_df[y],
-                                    "--", label=f"reference {n}")
-
-                        ax.plot(
-                            self.used_df[x], self.used_df[y], label=used_dataset.filename)
-                        ax.legend()
-                        plt.title("First visualization of the data")
-                        plt.show()
-
-                        # Check if all the references and data spectra have the same interval and nb of points
-                        good_range_ref = [np.array_equal(
-                            df[x].values, self.used_df[x].values) for df in self.ref_df]
-                        good_range_spec = [np.array_equal(
-                            df[x].values, self.used_df[x].values) for df in self.spec_df]
-
-                        if all(good_range_ref) and all(good_range_spec):
-                            print("""The energy ranges between the references and the data match.\nYou should shift the references so that the features are aligned in energy, and scale them so that the weight of each reference during the Linear Combination Fit is lower than 1.""")
-
-                            ButtonLauchLCF = Button(
-                                description="Launch LCF",
-                                layout=Layout(width='40%', height='35px'))
-                            display(ButtonLauchLCF)
-
-                            @ButtonLauchLCF.on_click
-                            def ActionLauchLCF(selfbutton):
-
-                                for used_df, C in zip(self.spec_df, used_datasets):
-
-                                    # Create function that returns the square of the difference between LCf of references and data, for each Dataset that was selected
-                                    def ref_model(pars):
-                                        # Sum weighted ref, initialized
-                                        y_sum = np.zeros(
-                                            len(self.ref_df[0].values))
-
-                                        # fig, ax = plt.subplots(figsize = (16, 6))
-
-                                        # All ref but last one
-                                        for used_df, p in zip(self.ref_df[:-1], pars):
-                                            y_sum += used_df[y].values * p
-
-                                            # print(p)
-                                            # ax.plot(used_df[y].values * p, label = n)
-
-                                        # Last ref
-                                        y_sum += self.ref_df[-1][y].values * \
-                                            (1 - np.sum(pars))
-
-                                        # print(1-np.sum(pars))
-                                        # ax.plot(self.ref_df[-1][y].values * (1-np.sum(pars)), label = self.ref_names[-1])
-
-                                        # Data
-                                        # ax.plot(self.InterpolatedUsedDf[y].values, label ="Data")
-                                        # ax.legend()
-
-                                        return np.sum((used_df[y].values - y_sum) ** 2)
-
-                                    # Launch fit
-                                    initial_guess = np.ones(
-                                        len(self.ref_df)-1) / len(self.ref_df)
-                                    print(initial_guess)
-                                    boundaries = [(0, 1) for i in range(
-                                        len(self.ref_names)-1)]
-
-                                    LCF_result = optimize.minimize(
-                                        ref_model, initial_guess, bounds=boundaries, method='TNC')
-                                    setattr(C, "LCF_result", LCF_result)
-
-                                    ref_weights = np.append(
-                                        LCF_result.x.copy(), 1 - np.sum(LCF_result.x))
-                                    setattr(C, "ref_weights", ref_weights)
-
-                                    # Plotting result
-                                    fig, ax = plt.subplots(figsize=(16, 6))
-                                    for data, n, w in zip(self.ref_df, self.ref_names, ref_weights):
-                                        ax.plot(
-                                            data[x], data[y] * w, "--", label=f"{n} component * {w}")
-                                        used_df[f"WeighedInterpolatedIt_{n}"] = data[y]*w
-
-                                    sum_ref_weights = np.sum(
-                                        [df[y] * w for df, w in zip(self.ref_df, ref_weights)], axis=0)
-
-                                    used_df["sum_ref_weights"] = sum_ref_weights
-                                    setattr(C, "LCF_df", used_df)
-
-                                    ax.plot(
-                                        used_df[x], sum_ref_weights, label="Sum of weighted references.")
-                                    ax.plot(
-                                        used_df[x], used_df[y], label=C.filename)
-                                    ax.legend()
-                                    plt.title("LCF Result")
-                                    plt.show()
-
-                                    # Print detailed result
-                                    print(
-                                        f"The detail of the fitting for {C.filename} is the following:")
-                                    print(LCF_result)
-                                    print(
-                                        f"The weights for the references are {ref_weights}")
-
-                                    r_factor = np.sum(
-                                        (self.used_df[y]-sum_ref_weights)**2) / np.sum((self.used_df[y])**2)
-                                    print(f"R factor :{r_factor}")
-                                    setattr(C, "ref_R_factor", r_factor)
-
-                                # Final plot of the reference weights
-                                fig, ax = plt.subplots(figsize=(10, 6))
-
-                                xplot = np.arange(0, len(used_datasets), 1)
-                                for j, n in enumerate(self.ref_names):
-                                    ax.plot(xplot, [
-                                            C.ref_weights[j] for C in used_datasets], marker='x', label=f"{n} component")
-                                ax.legend()
-                                ax.set_ylabel('Weight')
-                                ax.set_title(
-                                    'Comparison of weight importance thoughout data series')
-                                ax.set_xticks(xplot)
-                                ax.set_xticklabels(
-                                    [C.filename for C in used_datasets], rotation=90, fontsize=14)
-
-                        else:
-                            print(
-                                "The energy ranges between the references and the data do not match.")
-
-                    except (AttributeError, KeyError):
-                        print(f"Wrong Dataset and column combination !")
-
-                    # except(ValueError):
-                    #     print("Select at least two refs and one spectrum.")
-
-                    except Exception as e:
-                        raise e
-
-                # shift the references
-                shift_widgets = [widgets.FloatText(
-                    value=0,
-                    step=self.interpol_step,
-                    continuous_update=False,
-                    readout=True,
-                    readout_format='.2f',
-                    description=f"Shift for {n}",
-                    style={'description_width': 'initial'}) for n in self.ref_names]
-                _list_shift_widgets = widgets.HBox(tuple(shift_widgets))
-
-                # Multiply the reference intensity
-                self.intensity_factor_widgets = [widgets.FloatText(
-                    value=1,
-                    continuous_update=False,
-                    readout=True,
-                    readout_format='.2f',
-                    description=f"Intensity Factor for {n}",
-                    style={'description_width': 'initial'}) for n in self.ref_names]
-                _list_intensity_factor_widgets = widgets.HBox(
-                    tuple(self.intensity_factor_widgets))
-
-                # Select the energy range of interest for the data
-                self.energy_widgets = [widgets.FloatRangeSlider(
-                    min=self.new_energy_column[0],
-                    value=[self.new_energy_column[0],
-                           self.new_energy_column[-1]],
-                    max=self.new_energy_column[-1],
-                    step=self.interpol_step,
-                    description='Energy range (eV):',
-                    disabled=False,
-                    continuous_update=False,
-                    orientation="horizontal",
-                    readout=True,
-                    readout_format='.2f',
-                    style={'description_width': 'initial'},
-                    layout=Layout(width="50%", height='40px'))]
-                _list_energy_widgets = widgets.HBox(tuple(self.energy_widgets))
-
-                align_ref_and_spec_dict = {
-                    c.description: c for c in self.energy_widgets + shift_widgets + self.intensity_factor_widgets}
-
-                _list_in = widgets.VBox(
-                    [_list_energy_widgets, _list_shift_widgets, _list_intensity_factor_widgets])
-                _list_out = widgets.interactive_output(
-                    align_ref_and_spec, align_ref_and_spec_dict)
-                display(_list_in, _list_out)
-
-            except (AttributeError, KeyError):
-                print(f"Wrong Dataset and column combination !")
-
-            except Exception as e:
-                raise e
-        else:
-            clear_output(True)
-            print("Select at least two references, one Dataset that will serve to visualise the interpolation, and the list of datasets you would like to process.")
 
     # Reduction interactive function
     def reduce_data(
@@ -4186,14 +3644,15 @@ class Interface:
                                 y_axis_label=y_axis
                             )
 
-                            p.line("x", "y", source=source, line_alpha=0.8,
-                                   legend_label="Data", line_width=2,
+                            p.line("x", "y", source=source,
+                                   line_alpha=0.9, line_width=1.5,
+                                   legend_label="Data",
                                    line_color=self.matplotlib_colours[0],
                                    hover_line_alpha=1.0, hover_line_width=2.0,
                                    muted_alpha=0.1)
                             p.line("x", "y_guess", source=source_guess,
-                                   legend_label="Initial guess", line_alpha=0.8,
-                                   line_width=2,
+                                   line_alpha=0.9, line_width=1.5,
+                                   legend_label="Initial guess",
                                    line_color=self.matplotlib_colours[1],
                                    hover_line_alpha=1.0, hover_line_width=2.0,
                                    muted_alpha=0.1)
@@ -4209,9 +3668,9 @@ class Interface:
                                     x=x,
                                     y=np.ones(len(x)) *
                                     self.components['Bcgd_'],
-                                    line_alpha=0.5,
+                                    line_alpha=0.8, line_width=1.5,
                                     line_color=self.matplotlib_colours[3],
-                                    hover_line_alpha=1.0, hover_line_width=1.5,
+                                    hover_line_alpha=1.0, hover_line_width=2,
                                     muted_alpha=0.1,
                                     line_dash="dashed",
                                     legend_label='Background')
@@ -4219,9 +3678,9 @@ class Interface:
                                 p.line(
                                     x=x,
                                     y=self.components['Bcgd_'],
-                                    line_alpha=0.5,
+                                    line_alpha=0.8, line_width=1.5,
                                     line_color=self.matplotlib_colours[3],
-                                    hover_line_alpha=1.0, hover_line_width=1.5,
+                                    hover_line_alpha=1.0, hover_line_width=2,
                                     muted_alpha=0.1,
                                     line_dash="dashed",
                                     legend_label='Background')
@@ -4230,9 +3689,9 @@ class Interface:
                                 p.line(
                                     x=x,
                                     y=self.components['Step_'],
-                                    line_alpha=0.5,
+                                    line_alpha=0.8, line_width=1.5,
                                     line_color=self.matplotlib_colours[3],
-                                    hover_line_alpha=1.0, hover_line_width=1.5,
+                                    hover_line_alpha=1.0, hover_line_width=2,
                                     muted_alpha=0.1,
                                     line_dash="dashed",
                                     legend_label='Step')
@@ -4241,9 +3700,9 @@ class Interface:
                                 p.line(
                                     x=x,
                                     y=self.components[f"P{i}_"],
-                                    line_alpha=0.5,
+                                    line_alpha=0.8, line_width=1.5,
                                     line_color=self.matplotlib_colours[3+i],
-                                    hover_line_alpha=1.0, hover_line_width=1.5,
+                                    hover_line_alpha=1.0, hover_line_width=2,
                                     muted_alpha=0.1,
                                     line_dash="dashed",
                                     legend_label=f"Peak nb {i}")
@@ -4796,17 +4255,6 @@ class Interface:
             elif not change.new:
                 for w in self._list_tab_reduce_method.children[:4]:
                     w.disabled = False
-
-    def error_extraction_handler(self, change):
-        """
-        Handles changes on the widget used to extract errors"""
-
-        if change.new:
-            for w in self._list_errors_extraction.children[0:7]:
-                w.disabled = True
-        elif not change.new:
-            for w in self._list_errors_extraction.children[0:7]:
-                w.disabled = False
 
     def tools_bool_handler(self, change):
         """
