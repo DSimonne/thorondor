@@ -34,7 +34,7 @@ from bokeh.io import output_notebook, export_png
 output_notebook()
 
 
-class Interface():
+class Interface:
     """
     This  class is a Graphical User Interface (gui) that is meant to be used
     to process important amount of XPS datasets.
@@ -4187,12 +4187,13 @@ class Interface():
                             )
 
                             p.line("x", "y", source=source, line_alpha=0.8,
-                                   legend_label="Data",
+                                   legend_label="Data", line_width=2,
                                    line_color=self.matplotlib_colours[0],
                                    hover_line_alpha=1.0, hover_line_width=2.0,
                                    muted_alpha=0.1)
                             p.line("x", "y_guess", source=source_guess,
                                    legend_label="Initial guess", line_alpha=0.8,
+                                   line_width=2,
                                    line_color=self.matplotlib_colours[1],
                                    hover_line_alpha=1.0, hover_line_width=2.0,
                                    muted_alpha=0.1)
@@ -4212,6 +4213,7 @@ class Interface():
                                     line_color=self.matplotlib_colours[3],
                                     hover_line_alpha=1.0, hover_line_width=1.5,
                                     muted_alpha=0.1,
+                                    line_dash="dashed",
                                     legend_label='Background')
                             else:
                                 p.line(
@@ -4221,6 +4223,7 @@ class Interface():
                                     line_color=self.matplotlib_colours[3],
                                     hover_line_alpha=1.0, hover_line_width=1.5,
                                     muted_alpha=0.1,
+                                    line_dash="dashed",
                                     legend_label='Background')
 
                             if step_type:
@@ -4231,6 +4234,7 @@ class Interface():
                                     line_color=self.matplotlib_colours[3],
                                     hover_line_alpha=1.0, hover_line_width=1.5,
                                     muted_alpha=0.1,
+                                    line_dash="dashed",
                                     legend_label='Step')
 
                             for i in range(peak_number):
@@ -4241,6 +4245,7 @@ class Interface():
                                     line_color=self.matplotlib_colours[3+i],
                                     hover_line_alpha=1.0, hover_line_width=1.5,
                                     muted_alpha=0.1,
+                                    line_dash="dashed",
                                     legend_label=f"Peak nb {i}")
 
                             # Plot parameters
@@ -4377,7 +4382,7 @@ class Interface():
                             print("Could not compute chi square (scipy.chisquare)")
 
                         # R factor
-                        r_factor = 100 * \
+                        r_factor = 1 - 100 * \
                             (np.sum(self.out.residual**2)/np.sum(self.out.data**2))
                         self.used_dataset.r_factor = r_factor
 
