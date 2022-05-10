@@ -177,7 +177,7 @@ class DiamondDataset:
         title="Iterations",
         cmap="viridis",
         cmap_shift=0,
-        x="binding_energy",
+        x_axis="binding_energy",
         label_start=None,
         label_end=None,
     ):
@@ -191,7 +191,7 @@ class DiamondDataset:
         # Get data
         if used_df in self.df_names:
             data = getattr(self, used_df[:-3]+"_spectra")
-            x = getattr(self, used_df[:-3]+"_" + x)
+            x = getattr(self, used_df[:-3]+"_" + x_axis)
             nb_iterations = data.shape[1]
         else:
             raise AttributeError(
@@ -233,6 +233,7 @@ class DiamondDataset:
         p.yaxis.axis_label_text_font_size = "15pt"
         p.yaxis.major_label_text_font_size = "15pt"
         p.title.text_font_size = '20pt'
+        p.x_range.flipped = True if x_axis == "binding_energy" else False
 
         p.add_layout(Legend(label_text_font_size="15pt"), "center")
 
@@ -279,6 +280,61 @@ class DiamondDataset:
                     hover_line_alpha=1.0,
                     hover_line_width=2.0,
                 )
+
+        show(p)
+
+    def plot_data(
+        self,
+        df_name,
+        x_axis="binding_energy",
+        y_axis="spectrum"
+    ):
+        """
+        Interactive plotting using Bokeh to allow the use of the cursor and zoom
+
+        :param df_name: name of df, chosen in
+        :param x_axis: "binding_energy" or "kinetic_energy"
+        :param y_axis: "usually spectrum"
+        """
+        TOOLTIPS = [
+            (f"Binding energy (eV)", "$x"),
+            ("Intensity", "$y"),
+        ]
+        try:
+            x = getattr(self, df_name[:-3]+"_"+x_axis)
+            y = getattr(self, df_name[:-3]+"_"+y_axis)
+        except AttributeError:
+            print("Choose df name in", self.df_names)
+
+        p = figure(
+            tools="xpan, pan, wheel_zoom, box_zoom, reset, undo, redo, crosshair, hover, save",
+            active_scroll="wheel_zoom",
+            x_axis_label="Binding energy",
+            title=df_name,
+            width=1100,
+            height=600,
+        )
+
+        p.xaxis.axis_label_text_font_size = "15pt"
+        p.xaxis.major_label_text_font_size = "15pt"
+        p.yaxis.axis_label_text_font_size = "15pt"
+        p.yaxis.major_label_text_font_size = "15pt"
+        p.title.text_font_size = '20pt'
+        p.x_range.flipped = True
+        p.add_layout(Legend(label_text_font_size="15pt"), "center")
+
+        source = ColumnDataSource(
+            data=dict(
+                x=x,
+                y=y,
+            ))
+
+        p.line(
+            x='x', y='y', source=source,
+            line_width=1.2,
+            hover_line_alpha=1.0,
+            hover_line_width=2.0,
+        )
 
         show(p)
 
