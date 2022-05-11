@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import mplcyberpunk
 import glob
 import os
 import shutil
@@ -1271,20 +1272,20 @@ class Interface:
         n = used_dataset.df_names.copy()
         n.remove("Concatenated_df")
 
-        for s in n:
-            try:
-                table = [[
-                    "DataFrame",
-                    "Count time (s)",
-                    "Iterations",
-                    "Data shape",
-                    "Step (eV)",
-                    "Pass E. (eV)",
-                    "Photon E. (eV)",
-                    "Norm range"
-                ]]
-                tab = PrettyTable(table[0])
+        try:
+            table = [[
+                "DataFrame",
+                "Count time (s)",
+                "Iterations",
+                "Data shape",
+                "Step (eV)",
+                "Pass E. (eV)",
+                "Photon E. (eV)",
+                "Norm range"
+            ]]
+            tab = PrettyTable(table[0])
 
+            for s in n:
                 tab.add_rows([[
                     s,
                     getattr(used_dataset, s[:-3]+"_count_time"),
@@ -1297,19 +1298,20 @@ class Interface:
                     # getattr(used_dataset, s[:-3]+"_work_function"),
                     getattr(used_dataset, s[:-3]+"_norm_range"),
                 ]])
-            except Exception as E:
+        except Exception as E:
 
-                table = [[
-                    "DataFrame",
-                    "Count time (s)",
-                    "Iterations",
-                    "Data shape",
-                    "Step (eV)",
-                    "Pass E. (eV)",
-                    "Photon E. (eV)",
-                ]]
-                tab = PrettyTable(table[0])
+            table = [[
+                "DataFrame",
+                "Count time (s)",
+                "Iterations",
+                "Data shape",
+                "Step (eV)",
+                "Pass E. (eV)",
+                "Photon E. (eV)",
+            ]]
+            tab = PrettyTable(table[0])
 
+            for s in n:
                 tab.add_rows([[
                     s,
                     getattr(used_dataset, s[:-3]+"_count_time"),
@@ -1322,7 +1324,7 @@ class Interface:
                     # getattr(used_dataset, s[:-3]+"_work_function"),
                 ]])
 
-            print(tab)
+        print(tab)
 
         # Print shift if existing
         try:
@@ -3578,6 +3580,7 @@ class Interface:
                         clear_output(True)
 
                         # Load parameters from previous fitting result
+                        # on the same dataset !
                         try:
                             self.pars = getattr(
                                 self.used_dataset,
@@ -3704,7 +3707,6 @@ class Interface:
                                     line_color=self.matplotlib_colours[3+i],
                                     hover_line_alpha=1.0, hover_line_width=2,
                                     muted_alpha=0.1,
-                                    line_dash="dashed",
                                     legend_label=f"Peak nb {i}")
 
                             # Plot parameters
@@ -3755,6 +3757,7 @@ class Interface:
                         self.components = self.out.eval_components(x=x)
 
                         # Plot
+                        plt.style.use("cyberpunk")
                         fig, axes = plt.subplots(
                             2, 2, figsize=(12, 7),
                             gridspec_kw={'height_ratios': [5, 1]})
@@ -3786,13 +3789,13 @@ class Interface:
                             axes[0, 1].plot(
                                 x,
                                 np.ones(len(x)) * self.components['Bcgd_'],
-                                'k--',
+                                linestyle='--',
                                 label='Background')
                         else:
                             axes[0, 1].plot(
                                 x,
                                 self.components['Bcgd_'],
-                                'k--',
+                                linestyle='--',
                                 label='Background')
 
                         if step_type:
@@ -3807,48 +3810,55 @@ class Interface:
                         axes[0, 1].set_ylabel(y_axis, fontweight='bold')
                         axes[0, 1].legend()
 
+                        # Apply cool style to the figure
+                        for ax in axes.ravel():
+                            mplcyberpunk.add_underglow(ax)
+                            # mplcyberpunk.make_lines_glow(ax)
+                            # mplcyberpunk.add_glow_effects(ax)
+
                         # Save figure
                         plt.tight_layout()
-                        plt.savefig(f"{self.folders[3]}fit.pdf")
-                        plt.savefig(f"{self.folders[3]}fit.png")
-                        print(f"Saved image as {self.folders[3]}fit.pdf")
 
-                        # Check the stats of the fit
-                        try:
-                            chisq, p = chisquare(
-                                self.out.data,
-                                self.out.best_fit,
-                                ddof=(self.out.nfree)
-                            )
-                            setattr(self.used_dataset, "chisq", chisq)
-                            setattr(self.used_dataset, "p", p)
+                        figname = os.path.splitext(
+                            self.used_dataset.filename)[0] + "_fit"
 
-                            print(
-                                "#############################################"
-                                "\nSum of squared residuals: "
-                                f"{np.sum(self.out.residual**2):.3f}"
-                                f", lmfit chisqr: {self.out.chisqr:.3f}"
-                                f"\nSum of squared residuals/nfree: "
-                                f"{np.sum(self.out.residual**2)/(self.out.nfree):.3f}"
-                                f", lmfit redchisqr: {self.out.redchi:.3f}"
-                                f"\nScipy Chi square for Poisson distri: {chisq:.3f}"
-                                f", 1 - p = {1 - p:.3f}"
-                                "\nlmfit chisqr divided iter by expected "
-                                f"{np.sum((self.out.residual**2)/self.out.best_fit):.3f}\n"
-                                "#############################################"
-                            )
-                        except ValueError:
-                            print("Could not compute chi square (scipy.chisquare)")
+                        plt.savefig(f"{self.folders[3]}{figname}.pdf")
+                        plt.savefig(f"{self.folders[3]}{figname}.png")
+                        plt.show()
+                        print(f"Saved image as {self.folders[3]}{figname}")
+
+                        # Check the stats of the fit with scipy
+                        # try:
+                        #     chisq, p = chisquare(
+                        #         self.out.data,
+                        #         self.out.best_fit,
+                        #         ddof=(self.out.nfree)
+                        #     )
+                        #     setattr(self.used_dataset, "chisq", chisq)
+                        #     setattr(self.used_dataset, "p", p)
+
+                        #     print(
+                        #         "#############################################"
+                        #         f"\nScipy Chi square for Poisson distri: {chisq:.3f}"
+                        #         f", 1 - p = {1 - p:.3f}"
+                        #         "\nlmfit chisqr divided iter by expected "
+                        #         f"{np.sum((self.out.residual**2)/self.out.best_fit):.3f}\n"
+                        #         "#############################################"
+                        #     )
+                        # except ValueError:
+                        #     print("Could not compute chi square (scipy.chisquare)")
 
                         # R factor
-                        r_factor = 1 - 100 * \
-                            (np.sum(self.out.residual**2)/np.sum(self.out.data**2))
-                        self.used_dataset.r_factor = r_factor
+                        self.used_dataset.r_factor = 1 - 100 * \
+                            (
+                                np.sum(self.out.residual**2) /
+                                np.sum(self.out.data**2)
+                            )
 
                         print(
-                            "\n#############################################\n"
-                            f"R factor : {r_factor} %.\n"
-                            "#############################################"
+                            "\n####################\n"
+                            f"R factor : {self.used_dataset.r_factor:.4f} %.\n"
+                            "####################"
                         )
 
                         ButtonCI = Button(
@@ -3908,11 +3918,6 @@ class Interface:
 
                     @ButtonSaveModel.on_click
                     def ActionSave(selfbutton):
-                        clear_output(True)
-                        display(widgets.HBox((
-                            ButtonRetrievePara, ButtonSavePara, ButtonGuess,
-                            ButtonFit, ButtonSaveModel)))
-
                         try:
                             # Save best parameter values as initial guess
                             self.pars = self.out.params
@@ -3932,9 +3937,6 @@ class Interface:
                                 "residuals": self.out.residual,
                             })
 
-                            # Save weights
-
-                            # Save DF
                             setattr(
                                 self.used_dataset,
                                 self.used_df_name[:-3] + "_fit_df",
