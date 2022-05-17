@@ -6,6 +6,22 @@ Below, I will detail how to use the GUI, and what kind of workflow can be follow
 
 If this tool helped you, feel free to cite the paper about [`thorondor`](https://doi.org/10.1107/S1600577520011388).
 
+# Installing
+You need to already have Jupyter Notebook installed, since the package is meant to be used in a Notebook
+
+* `git clone -b diamond https://github.com/DSimonne/thorondor.git`
+* `cd thorondor`
+* `pip install .`
+
+Add a kernel if you created a new environment:
+`python -m ipykernel install --user --name=thorondor`
+
+Then in a notebook cell you can import the GUI by typing:
+`from thorondor.gui import Interface`
+
+And run it:
+`GUI = Interface()`
+
 # Loading data
 
 Currently, only the B07 beamline is supported. For future support of other beamlines, feel free to look at the `DiamondDataset` class and to copy its architecture.
