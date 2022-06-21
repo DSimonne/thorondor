@@ -689,43 +689,6 @@ class Interface:
             self._list_reduce_splines_derivative.children[-1]
         ])
 
-        # Widgets for the LSF background reduction and normalization method
-        self._list_normalize_maxima = interactive(
-            self.normalize_maxima,
-            y=widgets.Dropdown(
-                options=[
-                    ("Select a value", "value"),
-                    ("Intensity", "intensity"),
-                    ("Reference shift", "reference_shift"),
-                    ("First normalized \u03BC", "first_normalized_\u03BC"),
-                    ("Background corrected", "background_corrected"),
-                    ("Second normalized \u03BC", "second_normalized_\u03BC"),
-                ],
-                value="intensity",
-                description='Pick an y-axis',
-                disabled=False,
-                style={'description_width': 'initial'},
-                layout=Layout(width="50%", height='40px')),
-            interval=widgets.FloatRangeSlider(
-                min=self.new_energy_column[0],
-                value=[
-                    self.new_energy_column[0], self.new_energy_column[-1]],
-                max=self.new_energy_column[-1],
-                step=self.interpol_step,
-                description='Energy range (eV):',
-                disabled=False,
-                continuous_update=False,
-                orientation="horizontal",
-                readout=True,
-                readout_format='.2f',
-                style={'description_width': 'initial'},
-                layout=Layout(width="50%", height='40px')))
-        self.widget_list_normalize_maxima = widgets.VBox([
-            self._list_normalize_maxima.children[0],
-            self._list_normalize_maxima.children[1],
-            self._list_normalize_maxima.children[-1]
-        ])
-
         # Widgets for the fit,
         self._list_define_fitting_df = interactive(
             self.define_fitting_df,
@@ -987,7 +950,14 @@ class Interface:
                 disabled=True,
                 style={'description_width': 'initial'}),
             legend_column=widgets.Dropdown(
-                options=["Scan", "Condition", "Edge", "Comment"],
+                options=[
+                    "Scan",
+                    "Condition",
+                    "Scan & Condition",
+                    "Edge",
+                    "Scan & Edge",
+                    "Comment"
+                ],
                 value="Condition",
                 description='Legend column',
                 disabled=True,
@@ -1599,6 +1569,10 @@ class Interface:
                 # Hide plot by clicking on legend
                 p.legend.click_policy = "mute"
 
+                # Change x axis direction
+                if x == "binding_energy":
+                    p.x_range.flipped = True
+
                 # Show figure
                 show(p)
 
@@ -1806,8 +1780,6 @@ class Interface:
                 self._list_reduce_splines_derivative.children[0].disabled = False
                 self._list_reduce_splines_derivative.children[1].disabled = False
                 display(self.widget_list_reduce_splines_derivative)
-            if method == "NormMax" and plot_bool:
-                display(self.widget_list_normalize_maxima)
             if not plot_bool:
                 print("Window cleared")
                 plt.close()
@@ -3326,133 +3298,6 @@ class Interface:
             plt.close()
             print("The selected energy range, order, or parameter value is wrong.")
 
-    def normalize_maxima(self, y, interval):
-        """
-        """
-
-        try:
-            number = self.used_dataset_position
-            df = self.used_df_name
-
-            # Retrieve original data
-            mu, energy, v1, v2 = [], [], [], []
-            for j, C in enumerate(self.used_class_list):
-                used_df = getattr(C, df)
-                mu.append(used_df[y].values)
-                energy.append(used_df["Energy"].values)
-
-                try:
-                    v1.append(int(np.where(energy[j] == interval[0])[0]))
-                except TypeError:
-                    v1.append(0)
-
-                try:
-                    v2.append(int(np.where(energy[j] == interval[1])[0]))
-                except TypeError:
-                    v2.append(len(energy[j])-1)
-
-            plt.close()
-
-            fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
-            axs[0].set_xlabel("Energy")
-            axs[0].set_ylabel('Intensity')
-            axs[0].set_title('Data')
-            axs[0].tick_params(direction='in', labelsize=15, width=2)
-
-            axs[0].plot(energy[number], mu[number], label='Data')
-            axs[0].plot(energy[number][v1[number]:v2[number]], mu[number]
-                        [v1[number]:v2[number]], '-o', label='Selected Region')
-            axs[0].axvline(x=energy[number][v1[number]],
-                           color='black', linestyle='--')
-            axs[0].axvline(x=energy[number][v2[number]],
-                           color='black', linestyle='--')
-            axs[0].legend()
-
-            axs[1].set_title('normalized data')
-            axs[1].set_xlabel("Energy")
-            axs[1].set_ylabel('Intensity')
-            axs[1].yaxis.set_label_position("right")
-            axs[1].yaxis.tick_right()
-            axs[1].tick_params(direction='in', labelsize=15, width=2)
-            axs[1].set_xlim(energy[number][v1[number]],
-                            energy[number][v2[number]])
-
-            axs[1].plot(
-                energy[number][v1[number]:v2[number]],
-                mu[number][v1[number]:v2[number]] /
-                max(mu[number][v1[number]:v2[number]]),
-                '-',
-                color='C0'
-            )
-
-            print("Channel 1:", v1[number], ";",
-                  "energy:", energy[number][v1[number]])
-            print("Channel 2:", v2[number], ";",
-                  "energy:", energy[number][v2[number]])
-
-            ButtonNormMax = Button(
-                description="Normalize all spectra by their maximum intensity.",
-                layout=Layout(width='30%', height='35px'))
-            display(ButtonNormMax)
-
-            @ButtonNormMax.on_click
-            def ActionNormMax(selfbutton):
-
-                plt.close()
-
-                fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
-                axs[0].set_xlabel("Energy")
-                axs[0].set_ylabel('Intensity')
-                axs[0].set_title('Data')
-
-                axs[1].set_title('normalized data')
-                axs[1].set_xlabel("Energy")
-                axs[1].set_ylabel('Intensity')
-
-                normalized_data = []
-                for j, C in enumerate(self.used_class_list):
-                    axs[0].plot(energy[j][v1[j]:v2[j]], mu[j]
-                                [v1[j]:v2[j]], label=f"{C.filename}")
-                    axs[1].plot(energy[j][v1[j]:v2[j]], (mu[j][v1[j]:v2[j]] /
-                                max(mu[j][v1[j]:v2[j]])), label=f"{C.filename}")
-                    normalized_data.append(
-                        mu[j][v1[j]:v2[j]] / max(mu[j][v1[j]:v2[j]]))
-
-                axs[1].legend(loc='upper center', bbox_to_anchor=(
-                    0, -0.2), fancybox=True, shadow=True, ncol=1)
-                plt.show()
-
-                ButtonSaveNormalizedData = widgets.Button(
-                    description="Save normalized data",
-                    layout=Layout(width='30%', height='35px'))
-                display(ButtonSaveNormalizedData)
-
-                @ButtonSaveNormalizedData.on_click
-                def ActionSaveNormalizedData(selfbutton):
-                    # Save normalized data
-                    for j, C in enumerate(self.used_class_list):
-                        temp_df = pd.DataFrame()
-                        temp_df["Energy"] = energy[j][v1[j]:v2[j]]
-                        temp_df["\u03BC"] = mu[j][v1[j]:v2[j]]
-                        temp_df["\u03BC_variance"] = [1/d if d >
-                                                      0 else 0 for d in mu[j][v1[j]:v2[j]]]
-                        temp_df["second_normalized_\u03BC"] = normalized_data[j]
-                        setattr(C, "reduced_df", temp_df)
-                        print(f"Saved Dataset {C.filename}")
-                        temp_df.to_csv(
-                            f"{self.folders[2]}{C.filename}_reduced.csv", index=False)
-
-        except (AttributeError, KeyError):
-            plt.close()
-            if y == "value":
-                print("Please select a column.")
-            else:
-                print(f"Wrong Dataset and column combination !")
-
-        except (ValueError, NameError):
-            plt.close()
-            print("The selected energy range is wrong.")
-
     # Fitting
     def define_fitting_df(self, used_dataset, df, show_bool):
         """
@@ -4146,7 +3991,8 @@ class Interface:
                     click_policy="mute",
                     label_text_font_size="15pt",
                 ),
-                legend_position)
+                legend_position
+            )
 
             # Count number of scans with good df
             nb_color = 0
@@ -4158,15 +4004,19 @@ class Interface:
 
                     # Get attr for legend
                     try:
-                        scan = int(C.filename[6:11])
-                        row = self.logbook[self.logbook.Scan == scan]
+                        scan = C.filename[6:11]
+                        row = self.logbook[self.logbook.Scan == str(scan)]
 
-                        if legend_column == "Condition":
+                        if legend_column == "Scan & Condition":
                             legend = f"{scan}, {row.Condition.values[0]}"
-                        elif legend_column == "Edge":
+                        elif legend_column == "Scan & Edge":
                             legend = f"{scan}, {row.Edge.values[0]}"
+                        elif legend_column == "Condition":
+                            legend = row.Condition.values[0]
+                        elif legend_column == "Edge":
+                            legend = row.Edge.values[0]
                         elif legend_column == "Scan":
-                            legend = scan
+                            legend = str(scan)
                         else:
                             legend = f"{scan}, {row.Condition.values[0]}, {row.Edge.values[0]}"
                     except AttributeError:
