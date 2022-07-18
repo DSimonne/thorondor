@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import tables as tb
-from datetime import dateti
+from datetime import datetime
 import glob
 import os
 import pickle
