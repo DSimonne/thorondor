@@ -5,7 +5,7 @@ with open("thorondor/README.md", "r") as fh:
 
 setuptools.setup(
     name="thorondor",
-    version="0.4",
+    version="0.4.1",
     description="XANES package using jupyter widgets",
     author="David Simonne and Andrea Martini",
     author_email="david.simonne@synchrotron-soleil.fr, andrea.martini@unito.it",
