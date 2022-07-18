@@ -2,3 +2,5 @@ include thorondor/Elements/*
 include thorondor/Example/*
 include thorondor/Example/ExampleData/*
 include licence.txt
+include thorondor/README.md
+include README.md
