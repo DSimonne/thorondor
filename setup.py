@@ -5,7 +5,7 @@ with open("thorondor/README.md", "r") as fh:
 
 setuptools.setup(
     name="thorondor",
-    version="0.4.1",
+    version="0.4.2",
     description="XANES package using jupyter widgets",
     author="David Simonne and Andrea Martini",
     author_email="david.simonne@synchrotron-soleil.fr, andrea.martini@unito.it",
@@ -23,16 +23,17 @@ setuptools.setup(
 	include_package_data=True,
     python_requires='>=3.6',
     install_requires=[
-    "numpy",
-    "pandas",
-    "matplotlib",
-    "ipywidgets",
-    "ipython",
-    "scipy",
-    "lmfit",
-    "emcee",
-    "corner",
-    "xlrd",
-    "numdifftools",
-    "tables"]
+        "numpy",
+        "pandas",
+        "matplotlib",
+        "ipywidgets",
+        "ipython",
+        "scipy",
+        "lmfit",
+        "emcee",
+        "corner",
+        "xlrd",
+        "numdifftools",
+        "tables",
+    ]
 )
