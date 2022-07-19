@@ -2185,7 +2185,7 @@ class Interface():
                             path_data_as_csv, path_figures, path_import_data]
 
         if fix_name and create_folders:
-            clear_output = (True)
+            clear_output(True)
 
             for folder in self.folders:
                 if not os.path.exists(folder):
@@ -2231,7 +2231,7 @@ class Interface():
                         print(e)
 
             print("Work has been reset")
-            clear_output = (True)
+            clear_output(True)
 
         if not work:
             for w in self._list_data.children[:-1] + \
