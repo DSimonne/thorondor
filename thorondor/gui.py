@@ -956,7 +956,8 @@ class Interface:
                     "Scan & Condition",
                     "Edge",
                     "Scan & Edge",
-                    "Comment"
+                    "Comment",
+                    "Label",
                 ],
                 value="Condition",
                 description='Legend column',
@@ -4017,6 +4018,8 @@ class Interface:
                             legend = row.Edge.values[0]
                         elif legend_column == "Scan":
                             legend = str(scan)
+                        elif legend_column == "Label":
+                            legend = row.Label.values[0]
                         else:
                             legend = f"{scan}, {row.Condition.values[0]}, {row.Edge.values[0]}"
                     except AttributeError:
