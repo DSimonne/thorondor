@@ -181,6 +181,8 @@ class DiamondDataset:
         x_axis="binding_energy",
         label_start=None,
         label_end=None,
+        figure_width=1100,
+        figure_height=600,
     ):
         """
         Plot each iteration in spectra attribute
@@ -225,8 +227,8 @@ class DiamondDataset:
             active_scroll="wheel_zoom",
             x_axis_label="Binding energy",
             title=title,
-            width=1100,
-            height=600,
+            width=figure_width,
+            height=figure_height,
         )
 
         p.xaxis.axis_label_text_font_size = "15pt"
