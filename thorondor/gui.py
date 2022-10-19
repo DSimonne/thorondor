@@ -926,7 +926,7 @@ class Interface:
                 style={'description_width': 'initial'}),
             y_axis=widgets.Text(
                 value='Intensity',
-                placeholder='Intensity',
+                placeholder='Electron count',
                 description='Type the name of the y axis:',
                 disabled=True,
                 continuous_update=False,
