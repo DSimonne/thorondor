@@ -30,11 +30,12 @@ class DiamondDataset:
 
         :param filename: path to NeXuS file
         """
-        self.filename = filename.split("/")[-1]
+        self.folder, self.filename = os.path.split(filename)
+        self.folder += "/"
         self.df_names = []
 
         # Extract all interesting attributes from file
-        with h5py.File(self.filename) as f:
+        with h5py.File(self.folder + self.filename) as f:
             print(self.filename)
 
             self.group_list = list(f["entry1"]["instrument"].keys())
