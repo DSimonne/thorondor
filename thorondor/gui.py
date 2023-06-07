@@ -1043,7 +1043,7 @@ class Interface():
                     ("Polynoms", "Polynoms"),
                     ("Single Spline", "SingleSpline"),
                     ("Splines", "Splines"),
-                    #("Normalize by maximum", "NormMax")
+                    # ("Normalize by maximum", "NormMax")
                 ],
                 value="LSF",
                 description='Pick reduction method:',
@@ -5740,7 +5740,8 @@ class Interface():
             axs[1].set_xlim(energy[number][v1[number]],
                             energy[number][v2[number]])
 
-            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]:v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
+            axs[1].plot(energy[number][v1[number]:v2[number]], mu[number][v1[number]
+                        :v2[number]] / max(mu[number][v1[number]:v2[number]]), '-', color='C0')
 
             print("Channel 1:", v1[number], ";",
                   "energy:", energy[number][v1[number]])
