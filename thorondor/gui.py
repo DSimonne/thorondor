@@ -2234,14 +2234,17 @@ class Interface():
             clear_output(True)
 
         if not work:
-            for w in self._list_data.children[:-1] + \
-                    self.tab_tools.children[:-1] + \
-                    self._list_tab_reduce_method.children[:-1] + \
-                    self._list_define_fitting_df.children[:-1] + \
-                    self._list_plot_dataset.children[:-1] + \
-                    self._list_print_logbook.children[:-1]:
-                if not w.disabled:
-                    w.disabled = True
+            try:
+                for w in self._list_data.children[:-1] + \
+                        self.tab_tools.children[:-1] + \
+                        self._list_tab_reduce_method.children[:-1] + \
+                        self._list_define_fitting_df.children[:-1] + \
+                        self._list_plot_dataset.children[:-1] + \
+                        self._list_print_logbook.children[:-1]:
+                    if not w.disabled:
+                        w.disabled = True
+            except AttributeError:
+                pass
 
         if work:
             print("""
