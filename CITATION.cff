@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Simonne
+    given-names: David
+    orcid: https://orcid.org/0000-0002-0639-6742
+title: "Thorondor"
+version: 0.4.2
+doi: https://doi.org/10.1107/S1600577520011388
+date-released: 2022-08-15
+url: "https://github.com/DSimonne/thorondor/"
