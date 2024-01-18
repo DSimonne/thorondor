@@ -4024,6 +4024,7 @@ class Interface:
                             legend = f"{scan}, {row.Condition.values[0]}, {row.Edge.values[0]}"
                     except AttributeError:
                         print("No logbook attribute.")
+                        legend = None
                     except:
                         legend = C.filename
 
